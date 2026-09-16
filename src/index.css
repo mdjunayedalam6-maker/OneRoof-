@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+:root {
+  --theme-primary: #003882;
+  --theme-accent: #FF6B00;
+  --theme-primary-hover: #002c66;
+  --theme-accent-hover: #e55e00;
+  --theme-primary-light: rgba(0, 56, 130, 0.08);
+  --theme-accent-light: rgba(255, 107, 0, 0.12);
+  --theme-primary-gradient: linear-gradient(135deg, #0047AB 0%, #002868 100%);
+  --theme-accent-gradient: linear-gradient(135deg, #FF8C00 0%, #FF5100 100%);
+  --theme-accent-glow: 0 4px 16px rgba(255, 107, 0, 0.38);
+  --theme-primary-glow: 0 4px 16px rgba(0, 56, 130, 0.30);
+  --theme-radius: 1rem;
+}
+
+@layer base {
+  body {
+    font-family: 'Hind Siliguri', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Default inputs to crisp dark slate so text is never white on light backgrounds */
+  input, textarea, select {
+    color: #0f172a;
+  }
+
+  /* Custom scrollbar for clean marketplace feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+/* Dynamic Global Theme Classes */
+.theme-bg-primary {
+  background-color: var(--theme-primary) !important;
+}
+
+.theme-text-primary {
+  color: var(--theme-primary) !important;
+}
+
+.theme-border-primary {
+  border-color: var(--theme-primary) !important;
+}
+
+.theme-bg-accent {
+  background-color: var(--theme-accent) !important;
+}
+
+.theme-text-accent {
+  color: var(--theme-accent) !important;
+}
+
+.theme-border-accent {
+  border-color: var(--theme-accent) !important;
+}
+
+.theme-bg-light {
+  background-color: var(--theme-primary-light) !important;
+}
+
+.theme-badge-accent {
+  background-color: var(--theme-accent-light) !important;
+  color: var(--theme-accent) !important;
+}
+
+.theme-badge-primary {
+  background-color: var(--theme-primary-light) !important;
+  color: var(--theme-primary) !important;
+}
+
+/* Standard Theme Buttons */
+.theme-btn-primary {
+  background: var(--theme-primary) !important;
+  color: #ffffff !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 56, 130, 0.15);
+}
+
+.theme-btn-primary:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 12px rgba(0, 56, 130, 0.25);
+  transform: translateY(-1px);
+}
+
+.theme-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.theme-btn-accent {
+  background: var(--theme-accent) !important;
+  color: #ffffff !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(255, 107, 0, 0.20);
+}
+
+.theme-btn-accent:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 4px 14px rgba(255, 107, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.theme-btn-accent:active {
+  transform: scale(0.98);
+}
+
+/* Premium "Add to Cart" Button (অ্যাড টু কার্ট / কার্ট যোগ) */
+.theme-btn-cart {
+  background: linear-gradient(180deg, #0A2F6E 0%, #002660 100%) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.20);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  color: #ffffff !important;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 5px rgba(0, 38, 96, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-btn-cart:hover {
+  background: linear-gradient(180deg, #0d3882 0%, #002d72 100%) !important;
+  box-shadow: 0 4px 12px rgba(0, 38, 96, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.theme-btn-cart:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 2px rgba(0, 38, 96, 0.2);
+}
+
+/* Premium "Buy Now" Button (এখনই কিনুন / অর্ডার করুন) */
+.theme-btn-buy {
+  background: linear-gradient(135deg, #FF8C00 0%, #FF5A00 50%, #FF4500 100%) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.30);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+  color: #ffffff !important;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(255, 90, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-btn-buy:hover {
+  background: linear-gradient(135deg, #FFA01A 0%, #FF6600 50%, #FF5100 100%) !important;
+  box-shadow: 0 6px 20px rgba(255, 90, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.theme-btn-buy:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 4px rgba(255, 90, 0, 0.25);
+}
+
+/* Shimmer animation for eye-catching CTA highlights */
+@keyframes themeShine {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  100% { transform: translateX(250%) rotate(25deg); }
+}
+
+.theme-shimmer-effect::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    rgba(255, 255, 255, 0) 20%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0) 80%
+  );
+  transform: rotate(25deg);
+  pointer-events: none;
+  animation: themeShine 4s infinite ease-in-out;
+}@keyframes categoryBannerProgress {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}

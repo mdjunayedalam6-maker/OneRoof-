@@ -1,0 +1,1386 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { 
+  Language, 
+  PageView, 
+  Product, 
+  Category, 
+  CartItem, 
+  Order, 
+  OrderStatus,
+  User, 
+  FilterState, 
+  Coupon,
+  Review,
+  SiteSettings,
+  AdminBannerSlide
+} from '../types';
+import { 
+  PRODUCTS as INITIAL_PRODUCTS, 
+  CATEGORIES, 
+  INITIAL_USER, 
+  INITIAL_ORDERS 
+} from '../data/mockData';
+import { DEFAULT_SITE_SETTINGS, DEFAULT_BANNER_SLIDES } from '../data/defaultSiteSettings';
+import { TRANSLATIONS, formatPrice as formatPriceUtil } from '../utils/translations';
+import {
+  testSupabaseConnection,
+  syncOrderToSupabase,
+  deleteOrderFromSupabase,
+  fetchOrdersFromSupabase,
+  syncProductToSupabase,
+  deleteProductFromSupabase,
+  fetchProductsFromSupabase,
+  syncSiteSettingsToSupabase,
+  fetchSiteSettingsFromSupabase,
+  syncCategoriesToSupabase,
+  deleteCategoryFromSupabase,
+  fetchCategoriesFromSupabase,
+  syncBannerSlidesToSupabase,
+  deleteBannerSlideFromSupabase,
+  fetchBannerSlidesFromSupabase,
+  syncUserToSupabase,
+  fetchUsersFromSupabase,
+  supabase,
+  SUPABASE_URL,
+  SUPABASE_SETUP_SQL,
+} from '../lib/supabase';
+
+interface Toast {
+  id: string;
+  message: string;
+  type: 'success' | 'info' | 'error';
+}
+
+interface AppContextType {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: typeof TRANSLATIONS['bn'];
+  currentPage: PageView;
+  setCurrentPage: (page: PageView) => void;
+  selectedProduct: Product | null;
+  setSelectedProduct: (product: Product | null) => void;
+  viewProductDetails: (product: Product) => void;
+  products: Product[];
+  categories: Category[];
+  cart: CartItem[];
+  wishlist: string[];
+  orders: Order[];
+  currentUser: User | null;
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
+  isCartDrawerOpen: boolean;
+  setIsCartDrawerOpen: (open: boolean) => void;
+  filterState: FilterState;
+  setFilterState: React.Dispatch<React.SetStateAction<FilterState>>;
+  appliedCoupon: Coupon | null;
+  applyCoupon: (code: string) => { success: boolean; message: string };
+  removeCoupon: () => void;
+  addToCart: (product: Product, quantity?: number, variant?: Record<string, string>) => void;
+  updateCartQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (productId: string) => void;
+  clearCart: () => void;
+  toggleWishlist: (productId: string) => void;
+  isInWishlist: (productId: string) => boolean;
+  addReview: (productId: string, rating: number, comment: string, name: string) => void;
+  calculateShippingFee: (location?: 'dhaka' | 'outside', speed?: 'regular' | 'express', subtotal?: number) => number;
+  placeOrder: (shippingInfo: any, paymentMethod: any, specifiedShippingFee?: number) => Order;
+  lastPlacedOrder: Order | null;
+  toasts: Toast[];
+  addToast: (message: string, type?: 'success' | 'info' | 'error') => void;
+  removeToast: (id: string) => void;
+  loginUser: (identifier: string, password?: string) => boolean;
+  registerUser: (userData: Partial<User>) => boolean;
+  updateUserProfile: (userData: Partial<User>) => void;
+  logoutUser: () => void;
+  formatPrice: (amount: number) => string;
+  cartSubtotal: number;
+  cartDiscount: number;
+  cartShippingFee: number;
+  cartTotal: number;
+  cartItemsCount: number;
+  openCategory: (catSlug: string) => void;
+  profileActiveTab: 'overview' | 'orders' | 'wishlist' | 'addresses' | 'settings';
+  setProfileActiveTab: (tab: 'overview' | 'orders' | 'wishlist' | 'addresses' | 'settings') => void;
+  // Hidden Admin Panel extensions
+  siteSettings: SiteSettings;
+  updateSiteSettings: (newSettings: Partial<SiteSettings>) => void;
+  resetSiteSettings: () => void;
+  bannerSlides: AdminBannerSlide[];
+  updateBannerSlides: (slides: AdminBannerSlide[]) => void;
+  addBannerSlide: (slide: AdminBannerSlide) => void;
+  deleteBannerSlide: (id: string) => void;
+  addProduct: (product: Product) => void;
+  updateProduct: (id: string, updated: Partial<Product>) => void;
+  deleteProduct: (id: string) => void;
+  resetProductsToDefault: () => void;
+  addCategory: (category: Category) => void;
+  updateCategory: (id: string, updated: Partial<Category>) => void;
+  deleteCategory: (id: string) => void;
+  resetCategoriesToDefault: () => void;
+  updateBannerSlide: (id: string, updated: Partial<AdminBannerSlide>) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus, paymentStatus?: 'paid' | 'pending') => void;
+  deleteOrder: (orderId: string) => void;
+  isTrackOrderModalOpen: boolean;
+  setIsTrackOrderModalOpen: (open: boolean) => void;
+  trackingQuery: string;
+  setTrackingQuery: (q: string) => void;
+  openTrackOrder: (query?: string) => void;
+  isAdminModalOpen: boolean;
+  setIsAdminModalOpen: (open: boolean) => void;
+  isAdminAuthenticated: boolean;
+  loginAdmin: (identifier?: string, password?: string) => boolean;
+  logoutAdmin: () => void;
+  isUserAdmin: (user?: User | null) => boolean;
+  // Supabase Integration
+  supabaseConnected: boolean;
+  supabaseStatusMsg: string;
+  checkSupabaseConnection: () => Promise<boolean>;
+  syncAllToSupabase: () => Promise<boolean>;
+  supabaseSetupSql: string;
+  supabaseUrl: string;
+}
+
+const defaultFilterState: FilterState = {
+  category: 'all',
+  subcategory: 'all',
+  minPrice: 0,
+  maxPrice: 60000,
+  brand: [],
+  minRating: 0,
+  inStockOnly: false,
+  isFlashSaleOnly: false,
+  searchQuery: '',
+  sortBy: 'featured',
+};
+
+export const SECRET_ADMIN_CONFIG = {
+  email: 'mdjunayedalam6@gmail.com',
+  secondaryEmail: 'mdzunayedali6@gmail.com',
+  phone: '01929637253',
+  secondaryPhone: '01326654722',
+  password: 'oneroofzunaid6$',
+  secondaryPassword: 'zunayed12345#'
+};
+
+export const isUserAdmin = (user?: User | null): boolean => {
+  if (!user) return false;
+  const email = (user.email || '').trim().toLowerCase();
+  const phoneDigits = (user.phone || '').replace(/[^0-9]/g, '');
+  if (email === SECRET_ADMIN_CONFIG.email || email === SECRET_ADMIN_CONFIG.secondaryEmail) return true;
+  if (
+    phoneDigits.length >= 10 && 
+    (phoneDigits.endsWith(SECRET_ADMIN_CONFIG.phone) || phoneDigits.endsWith(SECRET_ADMIN_CONFIG.secondaryPhone))
+  ) {
+    return true;
+  }
+  return user.role === 'admin';
+};
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [language, setLanguageState] = useState<Language>(() => {
+    return (localStorage.getItem('oneroof_lang') as Language) || 'bn';
+  });
+
+  const [currentPage, setCurrentPageState] = useState<PageView>('home');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // Persistent Products
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const saved = localStorage.getItem('oneroof_products');
+      if (saved) {
+        const parsed: Product[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const existingIds = new Set(parsed.map((p) => p.id));
+          const missing = INITIAL_PRODUCTS.filter((p) => !existingIds.has(p.id));
+          return missing.length > 0 ? [...parsed, ...missing] : parsed;
+        }
+      }
+      return INITIAL_PRODUCTS;
+    } catch {
+      return INITIAL_PRODUCTS;
+    }
+  });
+
+  // Persistent Categories
+  const [categories, setCategories] = useState<Category[]>(() => {
+    try {
+      const saved = localStorage.getItem('oneroof_categories');
+      return saved ? JSON.parse(saved) : CATEGORIES;
+    } catch {
+      return CATEGORIES;
+    }
+  });
+
+  // Persistent Site Settings
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
+    try {
+      const saved = localStorage.getItem('oneroof_site_settings');
+      return saved ? { ...DEFAULT_SITE_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SITE_SETTINGS;
+    } catch {
+      return DEFAULT_SITE_SETTINGS;
+    }
+  });
+
+  // Persistent Banner Slides
+  const [bannerSlides, setBannerSlides] = useState<AdminBannerSlide[]>(() => {
+    try {
+      const saved = localStorage.getItem('oneroof_banner_slides');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length >= 5) {
+          return parsed;
+        }
+      }
+      return DEFAULT_BANNER_SLIDES;
+    } catch {
+      return DEFAULT_BANNER_SLIDES;
+    }
+  });
+
+  // Persistent Customer Orders
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try {
+      const saved = localStorage.getItem('oneroof_orders');
+      return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    } catch {
+      return INITIAL_ORDERS;
+    }
+  });
+
+  const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
+  const [profileActiveTab, setProfileActiveTab] = useState<'overview' | 'orders' | 'wishlist' | 'addresses' | 'settings'>('orders');
+
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('oneroof_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('oneroof_wishlist');
+      return saved ? JSON.parse(saved) : ['prod-1', 'prod-5'];
+    } catch {
+      return ['prod-1', 'prod-5'];
+    }
+  });
+
+  const [users, setUsers] = useState<User[]>(() => {
+    try {
+      const saved = localStorage.getItem('oneroof_users');
+      const parsed: User[] = saved ? JSON.parse(saved) : [];
+      const hasAdmin = parsed.some(
+        (u) =>
+          u.email?.toLowerCase() === SECRET_ADMIN_CONFIG.email ||
+          u.email?.toLowerCase() === SECRET_ADMIN_CONFIG.secondaryEmail ||
+          u.phone?.replace(/[^0-9]/g, '').endsWith(SECRET_ADMIN_CONFIG.phone) ||
+          u.phone?.replace(/[^0-9]/g, '').endsWith(SECRET_ADMIN_CONFIG.secondaryPhone)
+      );
+      if (!hasAdmin) {
+        return [INITIAL_USER, ...parsed];
+      }
+      return parsed.map((u) => {
+        if (
+          u.email?.toLowerCase() === SECRET_ADMIN_CONFIG.email ||
+          u.email?.toLowerCase() === SECRET_ADMIN_CONFIG.secondaryEmail ||
+          u.phone?.replace(/[^0-9]/g, '').endsWith(SECRET_ADMIN_CONFIG.phone) ||
+          u.phone?.replace(/[^0-9]/g, '').endsWith(SECRET_ADMIN_CONFIG.secondaryPhone)
+        ) {
+          return { ...u, role: 'admin' as const, password: u.password || SECRET_ADMIN_CONFIG.password };
+        }
+        return u;
+      });
+    } catch {
+      return [INITIAL_USER];
+    }
+  });
+
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('oneroof_current_user');
+      if (saved) {
+        const parsed: User = JSON.parse(saved);
+        if (isUserAdmin(parsed)) {
+          return { ...parsed, role: 'admin' as const };
+        }
+        return parsed;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isTrackOrderModalOpen, setIsTrackOrderModalOpen] = useState(false);
+  const [trackingQuery, setTrackingQuery] = useState('');
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+  const [filterState, setFilterState] = useState<FilterState>(defaultFilterState);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const openTrackOrder = (query?: string) => {
+    if (query) {
+      setTrackingQuery(query);
+    }
+    setIsTrackOrderModalOpen(true);
+  };
+
+  // Hidden Admin Authentication & Modal State
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('oneroof_admin_auth') === 'true';
+  });
+
+  // Supabase Connection & Sync State
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
+  const [supabaseStatusMsg, setSupabaseStatusMsg] = useState<string>('কানেক্ট হচ্ছে...');
+
+  // Check Supabase Connection
+  const checkSupabaseConnection = async (): Promise<boolean> => {
+    const res = await testSupabaseConnection();
+    setSupabaseConnected(res.success);
+    setSupabaseStatusMsg(res.message);
+    return res.success;
+  };
+
+  // Initial Supabase Sync on mount
+  useEffect(() => {
+    let isMounted = true;
+    const initSupabase = async () => {
+      try {
+        const res = await testSupabaseConnection();
+        if (isMounted) {
+          setSupabaseConnected(res.success);
+          setSupabaseStatusMsg(res.message);
+        }
+
+        // 1. Fetch Products
+        const remoteProducts = await fetchProductsFromSupabase();
+        if (isMounted && remoteProducts && remoteProducts.length > 0) {
+          setProducts(remoteProducts);
+        }
+
+        // 2. Fetch Orders
+        const remoteOrders = await fetchOrdersFromSupabase();
+        if (isMounted && remoteOrders && remoteOrders.length > 0) {
+          setOrders(remoteOrders);
+        }
+
+        // 3. Fetch Settings
+        const remoteSettings = await fetchSiteSettingsFromSupabase();
+        if (isMounted && remoteSettings) {
+          setSiteSettings(remoteSettings);
+        }
+
+        // 4. Fetch Categories
+        const remoteCategories = await fetchCategoriesFromSupabase();
+        if (isMounted && remoteCategories && remoteCategories.length > 0) {
+          setCategories(remoteCategories);
+        }
+
+        // 5. Fetch Banner Slides
+        const remoteSlides = await fetchBannerSlidesFromSupabase();
+        if (isMounted && remoteSlides && remoteSlides.length > 0) {
+          setBannerSlides(remoteSlides);
+        }
+
+        // 6. Fetch Users
+        const remoteUsers = await fetchUsersFromSupabase();
+        if (isMounted && remoteUsers && remoteUsers.length > 0) {
+          setUsers(remoteUsers);
+        }
+
+        // Setup real auth listener
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+          if (session?.user && event === 'SIGNED_IN') {
+            const email = session.user.email || '';
+            const phoneStr = session.user.phone || '';
+            const fullName = session.user.user_metadata?.full_name || '';
+            const avatarUrl = session.user.user_metadata?.avatar_url || '';
+            
+            setUsers(prev => {
+              const existingUser = prev.find(u => u.id === session.user.id);
+              const userObj: User = existingUser ? { ...existingUser } : {
+                id: session.user.id,
+                phone: phoneStr || email,
+                email: email,
+                name: fullName || (email ? email.split('@')[0] : 'User'),
+                avatar: avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+                password: '', 
+                division: '',
+                district: '',
+                thana: '',
+                village: '',
+                addresses: []
+              };
+              
+              setCurrentUser(userObj);
+              localStorage.setItem('oneroof_current_user', JSON.stringify(userObj));
+              
+              if (!existingUser) {
+                const next = [...prev, userObj];
+                syncUserToSupabase(userObj);
+                return next;
+              }
+              return prev;
+            });
+            
+            setIsAuthModalOpen(false);
+          } else if (event === 'SIGNED_OUT') {
+            setCurrentUser(null);
+            localStorage.removeItem('oneroof_current_user');
+          }
+        });
+        
+        // Setup real-time listeners for live sync across devices
+        const channel = supabase
+          .channel('oneroof-realtime')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'orders' },
+            (payload) => {
+              if (payload.eventType === 'INSERT' && payload.new?.data) {
+                const newOrder = payload.new.data as Order;
+                setOrders((prev) => (prev.some((o) => o.id === newOrder.id) ? prev : [newOrder, ...prev]));
+              } else if (payload.eventType === 'UPDATE' && payload.new?.data) {
+                const updatedOrder = payload.new.data as Order;
+                setOrders((prev) => prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o)));
+              } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+                const deletedId = payload.old.id;
+                setOrders((prev) => prev.filter((o) => o.id !== deletedId));
+              }
+            }
+          )
+          .subscribe();
+
+        // Clean up when unmounting
+        return () => {
+          authListener.subscription.unsubscribe();
+          supabase.removeChannel(channel);
+        };
+
+      } catch (e) {
+        console.warn('Supabase initial fetch notice:', e);
+      }
+    };
+
+    initSupabase();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Bulk Sync to Supabase
+  const syncAllToSupabase = async (): Promise<boolean> => {
+    try {
+      addToast(language === 'bn' ? 'Supabase এ সিঙ্ক শুরু হচ্ছে...' : 'Syncing with Supabase...', 'info');
+      await syncSiteSettingsToSupabase(siteSettings);
+      await syncCategoriesToSupabase(categories);
+      await syncBannerSlidesToSupabase(bannerSlides);
+      for (const p of products) {
+        await syncProductToSupabase(p);
+      }
+      for (const o of orders) {
+        await syncOrderToSupabase(o);
+      }
+      for (const u of users) {
+        await syncUserToSupabase(u);
+      }
+      setSupabaseConnected(true);
+      setSupabaseStatusMsg('সকল তথ্য Supabase এ সিঙ্ক হয়েছে');
+      addToast(
+        language === 'bn' ? 'সকল প্রডাক্ট, অর্ডার ও সেটিংস Supabase এ সিঙ্ক হয়েছে!' : 'All data synced to Supabase!',
+        'success'
+      );
+      return true;
+    } catch (e) {
+      addToast(language === 'bn' ? 'Supabase সিঙ্কে সমস্যা হয়েছে' : 'Supabase sync failed', 'error');
+      return false;
+    }
+  };
+
+  // Synchronize CSS Root Variables for dynamic branding
+  useEffect(() => {
+    const primary = siteSettings.primaryColor || '#003882';
+    const accent = siteSettings.accentColor || '#FF6B00';
+    document.documentElement.style.setProperty('--theme-primary', primary);
+    document.documentElement.style.setProperty('--theme-accent', accent);
+    document.documentElement.style.setProperty('--color-primary', primary);
+    document.documentElement.style.setProperty('--color-accent', accent);
+    document.documentElement.style.setProperty('--theme-primary-light', `${primary}14`);
+    document.documentElement.style.setProperty('--theme-accent-light', `${accent}1c`);
+  }, [siteSettings.primaryColor, siteSettings.accentColor]);
+
+  // Save changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('oneroof_lang', language);
+  }, [language]);
+
+  useEffect(() => {
+    localStorage.setItem('oneroof_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem('oneroof_wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
+
+  useEffect(() => {
+    localStorage.setItem('oneroof_products', JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem('oneroof_categories', JSON.stringify(categories));
+  }, [categories]);
+
+  useEffect(() => {
+    localStorage.setItem('oneroof_orders', JSON.stringify(orders));
+  }, [orders]);
+
+  useEffect(() => {
+    localStorage.setItem('oneroof_site_settings', JSON.stringify(siteSettings));
+  }, [siteSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('oneroof_users', JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('oneroof_current_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('oneroof_current_user');
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem('oneroof_banner_slides', JSON.stringify(bannerSlides));
+  }, [bannerSlides]);
+
+  // Apply dynamic theme colors and layout style to :root across the entire website
+  useEffect(() => {
+    const root = document.documentElement;
+    const primary = siteSettings.primaryColor || '#003882';
+    const accent = siteSettings.accentColor || '#FF6B00';
+
+    root.style.setProperty('--theme-primary', primary);
+    root.style.setProperty('--theme-accent', accent);
+    root.style.setProperty('--theme-primary-light', `${primary}18`);
+    root.style.setProperty('--theme-accent-light', `${accent}1e`);
+
+    // Radius
+    const radius = siteSettings.layoutStyle === 'compact' ? '0.5rem' : siteSettings.layoutStyle === 'festive' ? '1.5rem' : '1rem';
+    root.style.setProperty('--theme-radius', radius);
+  }, [siteSettings.primaryColor, siteSettings.accentColor, siteSettings.layoutStyle]);
+
+  // Secret keyboard trigger (Ctrl + Shift + A or Cmd + Shift + A) and URL Hash (#admin)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        setIsAdminModalOpen(true);
+      }
+    };
+
+    const checkHash = () => {
+      if (window.location.hash === '#admin' || window.location.search.includes('admin=')) {
+        setIsAdminModalOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('hashchange', checkHash);
+    checkHash();
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('hashchange', checkHash);
+    };
+  }, []);
+
+  const loginAdmin = (identifier?: string, password?: string): boolean => {
+    // If identifier & password provided
+    if (identifier && password) {
+      const cleanId = identifier.trim().toLowerCase();
+      const cleanDigits = identifier.replace(/[^0-9]/g, '');
+      const isEmailValid = cleanId === SECRET_ADMIN_CONFIG.email || cleanId === SECRET_ADMIN_CONFIG.secondaryEmail;
+      const isPhoneValid = cleanDigits.length >= 10 && (
+        cleanDigits.endsWith(SECRET_ADMIN_CONFIG.phone) || 
+        cleanDigits.endsWith(SECRET_ADMIN_CONFIG.secondaryPhone)
+      );
+      const isPassValid = password === SECRET_ADMIN_CONFIG.password || password === SECRET_ADMIN_CONFIG.secondaryPassword;
+
+      // Also check user database for any admin matching credentials
+      const matchedAdminUser = users.find((u) => {
+        if (!isUserAdmin(u) && u.role !== 'admin') return false;
+        const uEmail = (u.email || '').trim().toLowerCase();
+        const uPhoneDigits = (u.phone || '').replace(/[^0-9]/g, '');
+        const emailMatches = Boolean(uEmail && uEmail === cleanId);
+        const phoneMatches = cleanDigits.length >= 10 && uPhoneDigits.length >= 10 && uPhoneDigits.endsWith(cleanDigits.slice(-10));
+        const passMatches = u.password === password;
+        return (emailMatches || phoneMatches) && passMatches;
+      });
+
+      if (((isEmailValid || isPhoneValid) && isPassValid) || matchedAdminUser) {
+        let adminUser = matchedAdminUser || users.find((u) => isUserAdmin(u));
+
+        if (!adminUser) {
+          adminUser = { ...INITIAL_USER, role: 'admin' };
+          setUsers((prev) => [adminUser!, ...prev]);
+        }
+
+        const validAdmin = { ...adminUser, role: 'admin' as const };
+        setCurrentUser(validAdmin);
+        setIsAdminAuthenticated(true);
+        sessionStorage.setItem('oneroof_admin_auth', 'true');
+        addToast(
+          language === 'bn' 
+            ? 'এডমিন কন্ট্রোল ভেরিফাইড! এডমিন প্যানেলে স্বাগতম।' 
+            : 'Admin Verified! Welcome to Admin Panel.',
+          'success'
+        );
+        return true;
+      } else {
+        addToast(
+          language === 'bn' 
+            ? 'অ্যাক্সেস ডিনাইড! সঠিক অনুমোদিত এডমিন তথ্য ও পাসওয়ার্ড দিয়ে চেষ্টা করুন।' 
+            : 'Access Denied! Unauthorized admin credentials.',
+          'error'
+        );
+        return false;
+      }
+    }
+
+    // Direct entrance if already logged in with admin credentials
+    if (isUserAdmin(currentUser)) {
+      setIsAdminAuthenticated(true);
+      sessionStorage.setItem('oneroof_admin_auth', 'true');
+      addToast(
+        language === 'bn' 
+          ? 'স্বাগতম এডমিন! সরাসরি এডমিন প্যানেলে প্রবেশ করেছেন।' 
+          : 'Welcome Admin! Directly entered Admin Panel.',
+        'success'
+      );
+      return true;
+    }
+
+    addToast(
+      language === 'bn' 
+        ? 'অ্যাক্সেস ডিনাইড! শুধুমাত্র অনুমোদিত এডমিন অ্যাকাউন্ট দিয়েই প্রবেশ করা সম্ভব।' 
+        : 'Access Denied! Only authorized admin account can enter.',
+      'error'
+    );
+    return false;
+  };
+
+  const logoutAdmin = () => {
+    setIsAdminAuthenticated(false);
+    sessionStorage.removeItem('oneroof_admin_auth');
+    if (currentPage === 'admin') {
+      setCurrentPage('home');
+    }
+    addToast(language === 'bn' ? 'এডমিন প্যানেল থেকে প্রস্থান করা হয়েছে' : 'Logged out from Admin', 'info');
+  };
+
+  // Product Admin Operations
+  const addProduct = (newProduct: Product) => {
+    setProducts((prev) => [newProduct, ...prev]);
+    syncProductToSupabase(newProduct);
+    addToast(
+      language === 'bn' 
+        ? `"${newProduct.titleBn}" প্রডাক্ট সফলভাবে যুক্ত হয়েছে!` 
+        : `Product "${newProduct.titleEn}" added successfully!`,
+      'success'
+    );
+  };
+
+  const updateProduct = (id: string, updated: Partial<Product>) => {
+    setProducts((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, ...updated } : p));
+      const target = next.find((p) => p.id === id);
+      if (target) {
+        syncProductToSupabase(target);
+      }
+      return next;
+    });
+    addToast(language === 'bn' ? 'প্রডাক্ট তথ্য আপডেট করা হয়েছে!' : 'Product updated successfully!', 'success');
+  };
+
+  const deleteProduct = (id: string) => {
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+    deleteProductFromSupabase(id);
+    addToast(language === 'bn' ? 'প্রডাক্ট সফলভাবে মুছে ফেলা হয়েছে!' : 'Product deleted successfully!', 'info');
+  };
+
+  const resetProductsToDefault = () => {
+    setProducts(INITIAL_PRODUCTS);
+    localStorage.setItem('oneroof_products', JSON.stringify(INITIAL_PRODUCTS));
+    INITIAL_PRODUCTS.forEach((p) => syncProductToSupabase(p));
+    addToast(language === 'bn' ? 'ডিফল্ট প্রডাক্টগুলো রিস্টোর করা হয়েছে' : 'Default products restored', 'info');
+  };
+
+  // Category Admin Operations
+  const addCategory = (newCat: Category) => {
+    setCategories((prev) => {
+      const next = [...prev, newCat];
+      syncCategoriesToSupabase(next);
+      return next;
+    });
+    addToast(
+      language === 'bn' ? `"${newCat.nameBn}" ক্যাটাগরি সফলভাবে যুক্ত হয়েছে!` : `Category "${newCat.nameEn}" added!`,
+      'success'
+    );
+  };
+
+  const updateCategory = (id: string, updated: Partial<Category>) => {
+    setCategories((prev) => {
+      const next = prev.map((c) => (c.id === id ? { ...c, ...updated } : c));
+      syncCategoriesToSupabase(next);
+      return next;
+    });
+    addToast(language === 'bn' ? 'ক্যাটাগরি সফলভাবে আপডেট হয়েছে!' : 'Category updated successfully!', 'success');
+  };
+
+  const deleteCategory = (id: string) => {
+    setCategories((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      deleteCategoryFromSupabase(id);
+      syncCategoriesToSupabase(next);
+      return next;
+    });
+    addToast(language === 'bn' ? 'ক্যাটাগরি মুছে ফেলা হয়েছে' : 'Category deleted', 'info');
+  };
+
+  const resetCategoriesToDefault = () => {
+    setCategories(CATEGORIES);
+    localStorage.setItem('oneroof_categories', JSON.stringify(CATEGORIES));
+    syncCategoriesToSupabase(CATEGORIES);
+    addToast(language === 'bn' ? 'ডিফল্ট ক্যাটাগরিগুলো রিস্টোর করা হয়েছে' : 'Default categories restored', 'info');
+  };
+
+  // Order Admin Operations
+  const updateOrderStatus = (orderId: string, status: OrderStatus, paymentStatus?: 'paid' | 'pending') => {
+    setOrders((prev) => {
+      const next = prev.map((ord) => {
+        if (ord.id === orderId) {
+          const updatedOrd = {
+            ...ord,
+            status,
+            ...(paymentStatus ? { paymentStatus } : {}),
+          };
+          syncOrderToSupabase(updatedOrd);
+          return updatedOrd;
+        }
+        return ord;
+      });
+      return next;
+    });
+    addToast(
+      language === 'bn' ? `অর্ডার #${orderId} স্ট্যাটাস আপডেট হয়েছে!` : `Order #${orderId} status updated!`,
+      'success'
+    );
+  };
+
+  const deleteOrder = (orderId: string) => {
+    setOrders((prev) => prev.filter((ord) => ord.id !== orderId));
+    deleteOrderFromSupabase(orderId);
+    addToast(language === 'bn' ? 'অর্ডার রেকর্ড মুছে ফেলা হয়েছে' : 'Order record deleted', 'info');
+  };
+
+  // Site Settings Operations
+  const updateSiteSettings = (newSettings: Partial<SiteSettings>) => {
+    setSiteSettings((prev) => {
+      const merged = { ...prev, ...newSettings };
+      syncSiteSettingsToSupabase(merged);
+      return merged;
+    });
+    addToast(language === 'bn' ? 'সাইটের সেটিংস ও ডিজাইন সংরক্ষিত হয়েছে!' : 'Settings & design saved!', 'success');
+  };
+
+  const resetSiteSettings = () => {
+    setSiteSettings(DEFAULT_SITE_SETTINGS);
+    localStorage.setItem('oneroof_site_settings', JSON.stringify(DEFAULT_SITE_SETTINGS));
+    syncSiteSettingsToSupabase(DEFAULT_SITE_SETTINGS);
+    addToast(language === 'bn' ? 'ডিফল্ট সেটিংস ও কালার রিস্টোর করা হয়েছে' : 'Default settings restored', 'info');
+  };
+
+  // Banner Slides Operations
+  const updateBannerSlides = (slides: AdminBannerSlide[]) => {
+    setBannerSlides(slides);
+    syncBannerSlidesToSupabase(slides);
+    addToast(language === 'bn' ? 'ব্যানার স্লাইডার আপডেট হয়েছে!' : 'Banner slides updated!', 'success');
+  };
+
+  const addBannerSlide = (slide: AdminBannerSlide) => {
+    setBannerSlides((prev) => {
+      const next = [...prev, slide];
+      syncBannerSlidesToSupabase(next);
+      return next;
+    });
+    addToast(language === 'bn' ? 'নতুন ব্যানার যুক্ত করা হয়েছে!' : 'New banner added!', 'success');
+  };
+
+  const updateBannerSlide = (id: string, updated: Partial<AdminBannerSlide>) => {
+    setBannerSlides((prev) => {
+      const next = prev.map((s) => (s.id === id ? { ...s, ...updated } : s));
+      syncBannerSlidesToSupabase(next);
+      return next;
+    });
+    addToast(language === 'bn' ? 'ব্যানার সফলভাবে আপডেট হয়েছে!' : 'Banner updated successfully!', 'success');
+  };
+
+  const deleteBannerSlide = (id: string) => {
+    setBannerSlides((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      deleteBannerSlideFromSupabase(id);
+      syncBannerSlidesToSupabase(next);
+      return next;
+    });
+    addToast(language === 'bn' ? 'ব্যানার মুছে ফেলা হয়েছে!' : 'Banner deleted!', 'info');
+  };
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+  };
+
+  const setCurrentPage = (page: PageView) => {
+    setCurrentPageState(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const addToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      removeToast(id);
+    }, 4000);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const viewProductDetails = (product: Product) => {
+    setSelectedProduct(product);
+    setCurrentPage('product-detail');
+  };
+
+  const openCategory = (catSlug: string) => {
+    setFilterState((prev) => ({ ...prev, category: catSlug, searchQuery: '' }));
+    setCurrentPage('shop');
+  };
+
+  const addToCart = (product: Product, quantity = 1, variant?: Record<string, string>) => {
+    setCart((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) => item.product.id === product.id && JSON.stringify(item.selectedVariant) === JSON.stringify(variant)
+      );
+
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        updated[existingIndex].quantity += quantity;
+        return updated;
+      } else {
+        return [...prev, { product, quantity, selectedVariant: variant }];
+      }
+    });
+
+    const title = language === 'bn' ? product.titleBn : product.titleEn;
+    addToast(
+      language === 'bn' 
+        ? `"${title.substring(0, 24)}..." কার্টে যোগ করা হয়েছে` 
+        : `"${title.substring(0, 24)}..." added to cart`,
+      'success'
+    );
+  };
+
+  const updateCartQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setCart((prev) =>
+      prev.map((item) =>
+        item.product.id === productId ? { ...item, quantity } : item
+      )
+    );
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+    addToast(language === 'bn' ? 'আইটেম কার্ট থেকে সরানো হয়েছে' : 'Item removed from cart', 'info');
+  };
+
+  const clearCart = () => {
+    setCart([]);
+  };
+
+  const toggleWishlist = (productId: string) => {
+    const isSaved = wishlist.includes(productId);
+    if (isSaved) {
+      setWishlist((prev) => prev.filter((id) => id !== productId));
+      addToast(language === 'bn' ? 'উইশলিস্ট থেকে সরানো হয়েছে' : 'Removed from wishlist', 'info');
+    } else {
+      setWishlist((prev) => [...prev, productId]);
+      addToast(language === 'bn' ? 'উইশলিস্টে সংরক্ষণ করা হয়েছে' : 'Added to wishlist', 'success');
+    }
+  };
+
+  const isInWishlist = (productId: string) => wishlist.includes(productId);
+
+  const applyCoupon = (code: string): { success: boolean; message: string } => {
+    const trimmed = code.trim().toUpperCase();
+    if (trimmed === 'ONEROOF10') {
+      const coupon: Coupon = {
+        code: 'ONEROOF10',
+        discountPercent: 10,
+        minSpend: 1000,
+        description: language === 'bn' ? '১০% ফ্ল্যাট ডিসকাউন্ট' : '10% Flat Discount',
+      };
+      setAppliedCoupon(coupon);
+      return { 
+        success: true, 
+        message: language === 'bn' ? '১০% ডিসকাউন্ট কুপন সফলভাবে যুক্ত হয়েছে!' : '10% Discount applied successfully!' 
+      };
+    } else if (trimmed === 'EID500') {
+      const coupon: Coupon = {
+        code: 'EID500',
+        fixedDiscount: 500,
+        minSpend: 3000,
+        description: language === 'bn' ? '৳৫০০ ঈদ স্পেশাল ক্যাশব্যাক' : '৳500 Special Eid Cashback',
+      };
+      setAppliedCoupon(coupon);
+      return { 
+        success: true, 
+        message: language === 'bn' ? '৳৫০০ ছাড় সফলভাবে যুক্ত হয়েছে!' : '৳500 Discount applied!' 
+      };
+    } else {
+      return { 
+        success: false, 
+        message: language === 'bn' ? 'ভুল কুপন কোড! "ONEROOF10" বা "EID500" ট্রাই করুন' : 'Invalid promo code! Try "ONEROOF10" or "EID500"' 
+      };
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    addToast(language === 'bn' ? 'কুপন বাতিল করা হয়েছে' : 'Coupon removed', 'info');
+  };
+
+  const addReview = (productId: string, rating: number, comment: string, name: string) => {
+    const newRev: Review = {
+      id: 'rev-' + Date.now(),
+      userName: name || (currentUser ? currentUser.name : 'গ্রাহক (Customer)'),
+      rating,
+      date: language === 'bn' ? 'আজকে' : 'Today',
+      comment,
+      verifiedPurchase: true,
+    };
+
+    setProducts((prev) =>
+      prev.map((prod) => {
+        if (prod.id === productId) {
+          const updatedReviews = [newRev, ...prod.reviews];
+          const newAvgRating = (
+            updatedReviews.reduce((acc, r) => acc + r.rating, 0) / updatedReviews.length
+          );
+          const updatedProd = {
+            ...prod,
+            reviews: updatedReviews,
+            reviewCount: updatedReviews.length,
+            rating: Number(newAvgRating.toFixed(1)),
+          };
+          syncProductToSupabase(updatedProd).catch(() => {});
+          return updatedProd;
+        }
+        return prod;
+      })
+    );
+
+    addToast(
+      language === 'bn' ? 'আপনার রিভিউ সফলভাবে যুক্ত হয়েছে!' : 'Review posted successfully!',
+      'success'
+    );
+  };
+
+  // Cart Calculations
+  const cartSubtotal = cart.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
+
+  // Dynamic Shipping Fee Calculation
+  const calculateShippingFee = (
+    location: 'dhaka' | 'outside' = 'dhaka',
+    speed: 'regular' | 'express' = 'regular',
+    subtotal: number = cartSubtotal
+  ): number => {
+    if (cart.length === 0 || subtotal === 0) return 0;
+
+    // 1. Express delivery override
+    if (speed === 'express') {
+      return Number(siteSettings.shippingFeeExpress ?? 150);
+    }
+
+    // 2. Check if product-specific shipping fee is defined for the items in cart
+    if (location === 'dhaka') {
+      const productInsideFees = cart
+        .map((item) => item.product.shippingInside ?? item.product.shippingFee)
+        .filter((fee): fee is number => fee !== undefined && fee >= 0);
+      if (productInsideFees.length > 0) {
+        return Math.max(...productInsideFees);
+      }
+    } else {
+      const productOutsideFees = cart
+        .map((item) => item.product.shippingOutside ?? item.product.shippingFee)
+        .filter((fee): fee is number => fee !== undefined && fee >= 0);
+      if (productOutsideFees.length > 0) {
+        return Math.max(...productOutsideFees);
+      }
+    }
+
+    // 3. Check if all products in cart are marked as free shipping
+    const allFreeShipping = cart.every((item) => item.product.isFreeShipping);
+    if (allFreeShipping && speed === 'regular') return 0;
+
+    // 4. Check if subtotal qualifies for site-wide free delivery threshold
+    if (
+      siteSettings.enableFreeShipping !== false &&
+      siteSettings.freeShippingThreshold > 0 &&
+      subtotal >= siteSettings.freeShippingThreshold
+    ) {
+      if (speed === 'regular') return 0;
+    }
+
+    // 5. Default site settings inside vs outside Dhaka
+    if (location === 'dhaka') {
+      return Number(siteSettings.shippingFeeInsideDhaka ?? 60);
+    } else {
+      return Number(siteSettings.shippingFeeOutsideDhaka ?? 120);
+    }
+  };
+
+  const cartShippingFee = calculateShippingFee('dhaka', 'regular', cartSubtotal);
+
+  let cartDiscount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.discountPercent) {
+      cartDiscount = Math.round((cartSubtotal * appliedCoupon.discountPercent) / 100);
+    } else if (appliedCoupon.fixedDiscount) {
+      cartDiscount = appliedCoupon.fixedDiscount;
+    }
+  }
+
+  const cartTotal = Math.max(0, cartSubtotal - cartDiscount + cartShippingFee);
+  const cartItemsCount = cart.reduce((count, item) => count + item.quantity, 0);
+
+  const placeOrder = (shippingInfo: any, paymentMethod: any, specifiedShippingFee?: number): Order => {
+    const randomOrderNum = Math.floor(10000 + Math.random() * 90000);
+    const trackingNum = 'TRK-BD-' + Math.floor(100000 + Math.random() * 900000);
+    
+    const finalShippingFee = specifiedShippingFee !== undefined ? specifiedShippingFee : cartShippingFee;
+    const finalTotal = Math.max(0, cartSubtotal - cartDiscount + finalShippingFee);
+
+    const now = new Date();
+    const dateFormatted = language === 'bn' 
+      ? `আজ, ${now.toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' })}` 
+      : now.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    const newOrder: Order = {
+      id: `OR-${randomOrderNum}`,
+      trackingNumber: trackingNum,
+      date: dateFormatted,
+      status: 'placed',
+      items: cart.map((item) => ({
+        productId: item.product.id,
+        title: language === 'bn' ? item.product.titleBn : item.product.titleEn,
+        price: item.product.price,
+        quantity: item.quantity,
+        image: item.product.images[0],
+        variant: item.selectedVariant,
+      })),
+      subtotal: cartSubtotal,
+      shippingFee: finalShippingFee,
+      discount: cartDiscount,
+      total: finalTotal,
+      paymentMethod,
+      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid',
+      shippingAddress: shippingInfo,
+    };
+
+    setOrders((prev) => [newOrder, ...prev]);
+    setLastPlacedOrder(newOrder);
+    syncOrderToSupabase(newOrder);
+    clearCart();
+    setAppliedCoupon(null);
+    setCurrentPage('order-success');
+    addToast(
+      language === 'bn'
+        ? 'ধন্যবাদ! আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে।'
+        : 'Thank you! Your order has been placed successfully.',
+      'success'
+    );
+    return newOrder;
+  };
+
+  const loginUser = (identifier: string, password?: string): boolean => {
+    const cleanId = identifier.trim().toLowerCase();
+    const cleanDigits = identifier.replace(/[^0-9]/g, '');
+
+    const user = users.find(u => {
+      const uEmail = (u.email || '').trim().toLowerCase();
+      const uPhone = (u.phone || '').trim();
+      const uPhoneDigits = uPhone.replace(/[^0-9]/g, '');
+
+      // Match email directly
+      if (uEmail && uEmail === cleanId) return true;
+      // Match phone directly
+      if (uPhone && uPhone.toLowerCase() === cleanId) return true;
+      // Match phone digits (e.g., 01712-345678 vs 01712345678)
+      if (cleanDigits.length >= 10 && uPhoneDigits.length >= 10 && uPhoneDigits.endsWith(cleanDigits.slice(-10))) {
+        return true;
+      }
+      return false;
+    });
+
+    if (!user) {
+      addToast(
+        language === 'bn' 
+          ? 'এই ইমেইল বা মোবাইল নম্বরে কোনো অ্যাকাউন্ট পাওয়া যায়নি!' 
+          : 'No account found with this email or mobile number!', 
+        'error'
+      );
+      return false;
+    }
+    
+    if (password && user.password && user.password !== password) {
+      addToast(language === 'bn' ? 'ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।' : 'Incorrect password! Please try again.', 'error');
+      return false;
+    }
+
+    const isOwner = isUserAdmin(user);
+    const userToSet = isOwner && user.role !== 'admin' ? { ...user, role: 'admin' as const } : user;
+    setCurrentUser(userToSet);
+    if (isOwner || userToSet.role === 'admin') {
+      setIsAdminAuthenticated(true);
+      sessionStorage.setItem('oneroof_admin_auth', 'true');
+    }
+    setIsAuthModalOpen(false);
+    addToast(
+      language === 'bn' 
+        ? `স্বাগতম, ${user.name}! সফলভাবে লগইন হয়েছে।` 
+        : `Welcome, ${user.name}! Logged in successfully.`, 
+      'success'
+    );
+    return true;
+  };
+
+  const registerUser = (userData: Partial<User>): boolean => {
+    const cleanEmail = userData.email?.trim().toLowerCase() || '';
+    const cleanPhone = userData.phone?.trim() || '';
+    const cleanDigits = cleanPhone.replace(/[^0-9]/g, '');
+
+    // Validate uniqueness if email provided
+    if (cleanEmail) {
+      const existingEmail = users.find(u => (u.email || '').trim().toLowerCase() === cleanEmail);
+      if (existingEmail) {
+        addToast(
+          language === 'bn' 
+            ? 'এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট খোলা হয়েছে! লগইন করার চেষ্টা করুন।' 
+            : 'An account with this email already exists! Please log in.', 
+          'error'
+        );
+        return false;
+      }
+    }
+
+    // Validate phone uniqueness
+    if (cleanDigits.length >= 10) {
+      const existingPhone = users.find(u => (u.phone || '').replace(/[^0-9]/g, '').endsWith(cleanDigits.slice(-10)));
+      if (existingPhone) {
+        addToast(
+          language === 'bn' 
+            ? 'এই মোবাইল নম্বর দিয়ে আগেই অ্যাকাউন্ট খোলা হয়েছে! লগইন করার চেষ্টা করুন।' 
+            : 'An account with this phone number already exists! Please log in.', 
+          'error'
+        );
+        return false;
+      }
+    }
+
+    const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80';
+    
+    // Auto-promote owner email/phone to admin
+    const isAdmin = cleanEmail === SECRET_ADMIN_CONFIG.email || 
+                    cleanEmail === SECRET_ADMIN_CONFIG.secondaryEmail || 
+                    cleanDigits.endsWith(SECRET_ADMIN_CONFIG.phone) || 
+                    userData.role === 'admin';
+
+    const fullAddrString = [userData.village, userData.thana, userData.district, userData.division]
+      .filter(Boolean)
+      .join(', ');
+
+    const newUser: User = {
+      id: `user-${Date.now()}`,
+      name: userData.name?.trim() || '',
+      email: cleanEmail,
+      phone: cleanPhone,
+      password: userData.password || '',
+      role: isAdmin ? 'admin' : 'user',
+      division: userData.division?.trim() || '',
+      district: userData.district?.trim() || '',
+      thana: userData.thana?.trim() || '',
+      village: userData.village?.trim() || '',
+      avatar: userData.avatar || defaultAvatar,
+      addresses: userData.addresses || (fullAddrString ? [
+        {
+          id: `addr-${Date.now()}`,
+          title: language === 'bn' ? 'মূল ঠিকানা (Default Address)' : 'Primary Address',
+          address: fullAddrString,
+          district: userData.district?.trim() || '',
+          isDefault: true
+        }
+      ] : [])
+    };
+
+    setUsers(prev => [...prev, newUser]);
+    setCurrentUser(newUser);
+    syncUserToSupabase(newUser);
+    setIsAuthModalOpen(false);
+    addToast(
+      language === 'bn' 
+        ? `অভিনন্দন ${newUser.name}! আপনার রেজিস্ট্রেশন সফলভাবে সম্পন্ন হয়েছে।` 
+        : `Congratulations ${newUser.name}! Your account has been registered.`, 
+      'success'
+    );
+    return true;
+  };
+
+  const updateUserProfile = (userData: Partial<User>) => {
+    if (!currentUser) return;
+    const updatedUser = { ...currentUser, ...userData };
+    setCurrentUser(updatedUser);
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    syncUserToSupabase(updatedUser);
+    addToast(language === 'bn' ? 'প্রোফাইল আপডেট করা হয়েছে' : 'Profile updated successfully', 'success');
+  };
+
+  const logoutUser = () => {
+    setCurrentUser(null);
+    addToast(
+      language === 'bn' ? 'লগআউট সম্পন্ন হয়েছে' : 'Logged out',
+      'info'
+    );
+  };
+
+  const formatPrice = (amount: number) => {
+    return formatPriceUtil(amount, language);
+  };
+
+  return (
+    <AppContext.Provider
+      value={{
+        language,
+        setLanguage,
+        t: TRANSLATIONS[language],
+        currentPage,
+        setCurrentPage,
+        selectedProduct,
+        setSelectedProduct,
+        viewProductDetails,
+        products,
+        categories,
+        cart,
+        wishlist,
+        orders,
+        currentUser,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        isCartDrawerOpen,
+        setIsCartDrawerOpen,
+        filterState,
+        setFilterState,
+        appliedCoupon,
+        applyCoupon,
+        removeCoupon,
+        addToCart,
+        updateCartQuantity,
+        removeFromCart,
+        clearCart,
+        toggleWishlist,
+        isInWishlist,
+        addReview,
+        calculateShippingFee,
+        placeOrder,
+        lastPlacedOrder,
+        toasts,
+        addToast,
+        removeToast,
+        loginUser,
+        registerUser,
+        updateUserProfile,
+        logoutUser,
+        formatPrice,
+        cartSubtotal,
+        cartDiscount,
+        cartShippingFee,
+        cartTotal,
+        cartItemsCount,
+        openCategory,
+        profileActiveTab,
+        setProfileActiveTab,
+        siteSettings,
+        updateSiteSettings,
+        resetSiteSettings,
+        bannerSlides,
+        updateBannerSlides,
+        addBannerSlide,
+        updateBannerSlide,
+        deleteBannerSlide,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        resetProductsToDefault,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+        resetCategoriesToDefault,
+        updateOrderStatus,
+        deleteOrder,
+        isTrackOrderModalOpen,
+        setIsTrackOrderModalOpen,
+        trackingQuery,
+        setTrackingQuery,
+        openTrackOrder,
+        isAdminModalOpen,
+        setIsAdminModalOpen,
+        isAdminAuthenticated,
+        loginAdmin,
+        logoutAdmin,
+        isUserAdmin,
+        supabaseConnected,
+        supabaseStatusMsg,
+        checkSupabaseConnection,
+        syncAllToSupabase,
+        supabaseSetupSql: SUPABASE_SETUP_SQL,
+        supabaseUrl: SUPABASE_URL,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useApp must be used within an AppProvider');
+  }
+  return context;
+};
