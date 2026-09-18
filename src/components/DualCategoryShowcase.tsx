@@ -379,7 +379,7 @@ export const DualCategoryShowcase: React.FC = () => {
           titleEn="Pure Natural & Organic Food"
           subtitleBn="সুন্দরবনের প্রাকৃতিক মধু, সুগন্ধি চিনিগুঁড়া চাল, খাঁটি সরিষার তেল ও গাওয়া ঘি"
           subtitleEn="Sundarbans raw honey, fragrant chinigura rice, cold-pressed oil & ghee"
-          badgeBn="খাঁটি ও প্রাকৃতিক • ১০০% খাঁটি"
+          badgeBn="খাঁটি ও প্রাকৃতিক • 100% খাঁটি"
           badgeEn="100% Pure & Organic Staples"
           badgeBg="bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black"
           themeColor="emerald"

@@ -121,7 +121,7 @@ export const CartPage: React.FC = () => {
                 <div key={item.product.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row items-center gap-4">
                   {/* Thumbnail */}
                   <img
-                    src={item.product.images[0]}
+                    src={item.selectedImage || item.product.images[0]}
                     alt={title}
                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-slate-200 bg-slate-50 shrink-0"
                   />
@@ -134,15 +134,25 @@ export const CartPage: React.FC = () => {
                     <h3 className="text-sm sm:text-base font-bold text-slate-800 line-clamp-2 mt-1">
                       {title}
                     </h3>
-                    {item.selectedVariant && (
-                      <div className="text-xs text-slate-500 mt-1">
-                        {Object.entries(item.selectedVariant).map(([k, v]) => (
-                          <span key={k} className="mr-2 capitalize">
-                            {k}: {v}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    
+                    {/* Selected Variants Badges (Size, Color, etc.) */}
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-1.5">
+                      {item.selectedSize && (
+                        <span className="inline-flex items-center text-[11px] font-bold bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded-md border border-indigo-200">
+                          সাইজ: {item.selectedSize}
+                        </span>
+                      )}
+                      {item.selectedColor && (
+                        <span className="inline-flex items-center text-[11px] font-bold bg-amber-50 text-amber-900 px-2 py-0.5 rounded-md border border-amber-200">
+                          কালার: {item.selectedColor}
+                        </span>
+                      )}
+                      {item.selectedVariant && Object.entries(item.selectedVariant).filter(([k]) => k.toLowerCase() !== 'size' && k.toLowerCase() !== 'color').map(([k, v]) => (
+                        <span key={k} className="inline-flex items-center text-[11px] font-medium bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md capitalize">
+                          {k}: {v}
+                        </span>
+                      ))}
+                    </div>
                     <div className="text-xs font-semibold text-slate-600 mt-1">
                       {formatPrice(item.product.price)} / পিস
                     </div>
@@ -295,7 +305,7 @@ export const CartPage: React.FC = () => {
             <div className="pt-2 text-center text-[11px] text-slate-400 space-y-1">
               <div className="flex items-center justify-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{language === 'bn' ? '১০০% নিরাপদ ও সুরক্ষিত পেমেন্ট' : '100% Safe & Secure Checkout'}</span>
+                <span>{language === 'bn' ? '100% নিরাপদ ও সুরক্ষিত পেমেন্ট' : '100% Safe & Secure Checkout'}</span>
               </div>
               <p>{language === 'bn' ? 'বিকাশ, নগদ বা ক্যাশ অন ডেলিভারি সাপোর্ট' : 'bKash, Nagad, Card or Cash on Delivery'}</p>
             </div>
@@ -372,12 +382,24 @@ export const CartDrawer: React.FC = () => {
               return (
                 <div key={item.product.id} className="py-3 flex items-center gap-3">
                   <img
-                    src={item.product.images[0]}
+                    src={item.selectedImage || item.product.images[0]}
                     alt={title}
                     className="w-16 h-16 object-cover rounded-xl border border-slate-200 shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{title}</h4>
+                    <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                      {item.selectedSize && (
+                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-100">
+                          সাইজ: {item.selectedSize}
+                        </span>
+                      )}
+                      {item.selectedColor && (
+                        <span className="text-[10px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-100">
+                          কালার: {item.selectedColor}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs font-black text-emerald-700 mt-0.5">
                       {formatPrice(item.product.price * item.quantity)}
                     </div>

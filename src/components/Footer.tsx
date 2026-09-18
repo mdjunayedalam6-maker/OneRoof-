@@ -16,7 +16,9 @@ import {
   Lock,
   MessageCircle,
   MessageSquare,
-  PhoneCall
+  PhoneCall,
+  Download,
+  Smartphone
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { BrandLogo } from './BrandLogo';
@@ -43,17 +45,17 @@ export const Footer: React.FC = () => {
           <div className="flex flex-col items-center text-center space-y-4">
             <BrandLogo onClick={() => setCurrentPage('home')} size="md" textColor="light" />
 
-            <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
+            <p className="text-xs text-slate-300/90 leading-relaxed max-w-md">
               {language === 'bn'
-                ? 'OneRoof হলো বাংলাদেশের আধুনিকতম অল-ইন-ওয়ান মাল্টি-ভেন্ডার ই-কমার্স মার্কেটপ্লেস। এক ছাদের নিচে ইলেকট্রনিক্স, ফ্যাশন, গ্রোসারি, রূপচর্চা সহ প্রাত্যহিক জীবনের সকল প্রয়োজনীয় পণ্য পৌঁছে দিচ্ছি বিশ্বস্ততার সাথে।'
-                : 'OneRoof is Bangladesh’s premier all-in-one marketplace delivering lifestyle, electronics, groceries, and essentials under one single roof with authentic guarantee.'}
+                ? 'OneRoof — সারা বাংলাদেশ অনলাইন মার্কেট। 100% আসল পণ্যের নিশ্চয়তা ও দ্রুততম ক্যাশ অন ডেলিভারিতে আপনার প্রয়োজনীয় সবকিছু এক ছাদেই।'
+                : 'OneRoof — Nationwide online marketplace across Bangladesh, delivering 100% authentic products with fast cash on delivery under one roof.'}
             </p>
 
             <div className="space-y-2.5 text-xs text-slate-300">
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <a href="tel:01929637253" className="hover:text-emerald-400 transition-colors">
-                  হটলাইন: <strong className="font-mono text-white">01929637253</strong> (সকাল ৯টা - রাত ১০টা)
+                  হটলাইন: <strong className="font-mono text-white">01929637253</strong> (সকাল 9টা - রাত 10টা)
                 </a>
               </div>
               <div className="flex items-center gap-2">
@@ -131,6 +133,40 @@ export const Footer: React.FC = () => {
                 </a>
               )}
             </div>
+
+            {/* App / Software Download Option (Shows when link is provided in admin) */}
+            {siteSettings.appDownloadUrl?.trim() && (
+              <div className="pt-3 pb-1 w-full max-w-lg">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3.5 p-3.5 px-4 sm:px-5 bg-gradient-to-r from-slate-900/90 via-emerald-950/60 to-slate-900/90 border border-emerald-500/40 rounded-2xl shadow-xl shadow-emerald-950/30">
+                  <div className="flex items-center gap-3 text-center sm:text-left">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
+                      <Smartphone className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-white flex items-center justify-center sm:justify-start gap-2">
+                        <span>{siteSettings.appNameBn || (language === 'bn' ? 'OneRoof মোবাইল অ্যাপ' : 'OneRoof Mobile App')}</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                          APK / App
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-300">
+                        {siteSettings.appSubtitleBn || (language === 'bn' ? 'সহজ ও দ্রুত কেনাকাটায় সরাসরি ডাউনলোড ও ইনস্টল করুন' : 'Download and install now for faster shopping')}
+                      </div>
+                    </div>
+                  </div>
+                  <a
+                    href={siteSettings.appDownloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all hover:scale-105 cursor-pointer shrink-0"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>{language === 'bn' ? 'ডাউনলোড করুন' : 'Download Now'}</span>
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -158,7 +194,7 @@ export const Footer: React.FC = () => {
           </button>
         </div>
         <p className="text-[11px] text-slate-500">
-          ট্রেড লাইসেন্স নং: TRAD/DNCC/012938/2024 | ডিবিআইডি নং: ৯৮৪২১
+          ট্রেড লাইসেন্স নং: TRAD/DNCC/012938/2024 | ডিবিআইডি নং: 98421
         </p>
       </div>
     </footer>

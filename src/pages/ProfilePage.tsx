@@ -30,6 +30,7 @@ export const ProfilePage: React.FC = () => {
   const {
     currentUser,
     orders,
+    userOrders,
     wishlist,
     products,
     language,
@@ -52,7 +53,7 @@ export const ProfilePage: React.FC = () => {
 
   const activeTab = profileActiveTab;
   const setActiveTab = setProfileActiveTab;
-  const [selectedOrderTracking, setSelectedOrderTracking] = useState<string | null>(orders[0]?.id || null);
+  const [selectedOrderTracking, setSelectedOrderTracking] = useState<string | null>(userOrders[0]?.id || null);
   const [smsNotification, setSmsNotification] = useState(true);
   const [promoNotification, setPromoNotification] = useState(true);
   const [securityNotification, setSecurityNotification] = useState(true);
@@ -136,7 +137,9 @@ export const ProfilePage: React.FC = () => {
                 VIP Member
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">{currentUser.email} | {currentUser.phone}</p>
+            <p className="text-xs text-slate-300 mt-0.5">
+              {[currentUser.email, currentUser.phone].filter(Boolean).join(' | ') || (language === 'bn' ? 'কাস্টমার প্রোফাইল' : 'Customer Profile')}
+            </p>
             <div className="flex items-center gap-2 mt-2 text-[11px] text-emerald-300">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>{language === 'bn' ? 'যাচাইকৃত গ্রাহক অ্যাকাউন্ট' : 'Verified Customer Account'}</span>
@@ -183,8 +186,8 @@ export const ProfilePage: React.FC = () => {
             >
               <Package className="w-4 h-4 text-emerald-600" />
               <span className="flex-1 text-left">{t.myOrders}</span>
-              <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                {orders.length}
+              <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">
+                {userOrders.length}
               </span>
             </button>
 
@@ -239,24 +242,50 @@ export const ProfilePage: React.FC = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-slate-900">
-                  {t.myOrders} ({orders.length})
+                  {t.myOrders} ({userOrders.length})
                 </h2>
               </div>
 
-              {orders.length === 0 ? (
-                <div className="bg-white rounded-3xl p-10 text-center border border-slate-200/80 space-y-3">
-                  <Package className="w-12 h-12 text-slate-300 mx-auto" />
-                  <p className="text-sm text-slate-500">{language === 'bn' ? 'আপনার কোনো পূর্ববর্তী অর্ডার নেই' : 'You have no orders yet'}</p>
+              {/* Admin Note if admin is logged in */}
+              {isUserAdmin(currentUser) && orders.length > 0 && userOrders.length === 0 && (
+                <div className="p-4 bg-blue-50/80 border border-blue-200/80 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs text-blue-900">
+                  <span>
+                    {language === 'bn'
+                      ? `এডমিন নোটিশ: দোকানে গ্রাহকদের মোট ${orders.length}টি অর্ডার জমা আছে। সকল অর্ডার দেখতে এডমিন প্যানেলে যান।`
+                      : `Admin Note: Store has ${orders.length} total customer orders. Visit the Admin Panel to manage all.`}
+                  </span>
                   <button
-                    onClick={() => setCurrentPage('shop')}
-                    className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold"
+                    onClick={() => setCurrentPage('admin')}
+                    className="px-3.5 py-1.5 bg-[#003882] hover:bg-[#002860] text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-colors"
                   >
-                    {t.startShopping}
+                    {language === 'bn' ? 'এডমিন ড্যাশবোর্ড' : 'Admin Dashboard'}
                   </button>
+                </div>
+              )}
+
+              {userOrders.length === 0 ? (
+                <div className="bg-white rounded-3xl p-10 text-center border border-slate-200/80 space-y-3 shadow-xs">
+                  <Package className="w-12 h-12 text-slate-300 mx-auto" />
+                  <p className="text-base font-bold text-slate-800">
+                    {language === 'bn' ? 'আপনার কোনো পূর্ববর্তী অর্ডার নেই' : 'You have no orders yet'}
+                  </p>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                    {language === 'bn' 
+                      ? 'নতুন একাউন্ট খোলায় এখানে স্বয়ংক্রিয়ভাবে কোনো পণ্য বা অর্ডার নেই। আপনি যখন কোনো পণ্য অর্ডার করবেন, শুধুমাত্র তখন সেই অর্ডারটি বিস্তারিত বিবরণ সহ এখানে যুক্ত হবে।' 
+                      : 'No automatic orders exist for your account. Once you place an order, your purchased products will appear here.'}
+                  </p>
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setCurrentPage('shop')}
+                      className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                    >
+                      {t.startShopping}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {orders.map((order) => {
+                  {userOrders.map((order) => {
                     const isExpanded = selectedOrderTracking === order.id;
                     const currentStep = getStatusStep(order.status);
 
@@ -362,7 +391,19 @@ export const ProfilePage: React.FC = () => {
                               />
                               <div className="flex-1 min-w-0">
                                 <h4 className="text-xs font-bold text-slate-800 truncate">{item.title}</h4>
-                                <p className="text-[11px] text-slate-500">
+                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                  {item.selectedSize && (
+                                    <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-100">
+                                      সাইজ: {item.selectedSize}
+                                    </span>
+                                  )}
+                                  {item.selectedColor && (
+                                    <span className="text-[10px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-100">
+                                      কালার: {item.selectedColor}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-slate-500 mt-0.5">
                                   {language === 'bn' ? 'পরিমাণ:' : 'Qty:'} {item.quantity} | {formatPrice(item.price)}
                                 </p>
                               </div>
@@ -681,7 +722,11 @@ export const ProfilePage: React.FC = () => {
                   </div>
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/60">
                     <span className="text-[11px] text-slate-500 block">{language === 'bn' ? 'মোবাইল নম্বর' : 'Phone Number'}</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block">{currentUser.phone}</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block">{currentUser.phone || 'N/A'}</span>
+                  </div>
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/60">
+                    <span className="text-[11px] text-slate-500 block">{language === 'bn' ? 'ইমেইল অ্যাড্রেস' : 'Email Address'}</span>
+                    <span className="text-xs font-bold text-slate-800 mt-0.5 block">{currentUser.email || 'N/A'}</span>
                   </div>
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/60">
                     <span className="text-[11px] text-slate-500 block">{language === 'bn' ? 'বিভাগ' : 'Division'}</span>

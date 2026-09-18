@@ -31,7 +31,9 @@ import {
   X,
   Database,
   Copy,
-  Check
+  Check,
+  Smartphone,
+  ExternalLink
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Product, Category, Order, OrderStatus, AdminBannerSlide } from '../types';
@@ -118,7 +120,7 @@ export const AdminPage: React.FC = () => {
   const [newSlideSubtitleBn, setNewSlideSubtitleBn] = useState('');
   const [newSlideImage, setNewSlideImage] = useState('https://images.unsplash.com/photo-1542838132-92c53300491e?w=1600&h=500&auto=format&fit=crop&q=85');
   const [newSlideBadge, setNewSlideBadge] = useState('বিশেষ ছাড়');
-  const [newSlideDiscount, setNewSlideDiscount] = useState('৫০% পর্যন্ত ছাড়');
+  const [newSlideDiscount, setNewSlideDiscount] = useState('50% পর্যন্ত ছাড়');
   const [newSlideTargetCat, setNewSlideTargetCat] = useState('fashion');
 
   // Banner Edit state
@@ -405,7 +407,7 @@ export const AdminPage: React.FC = () => {
       return;
     }
     if (newPinInput.length < 4) {
-      addToast('নতুন পিন কমপক্ষে ৪ ডিজিট হতে হবে', 'error');
+      addToast('নতুন পিন কমপক্ষে 4 ডিজিট হতে হবে', 'error');
       return;
     }
     if (newPinInput !== confirmPinInput) {
@@ -815,24 +817,44 @@ export const AdminPage: React.FC = () => {
 
                     {/* Ordered Items Detailed List */}
                     <div className="space-y-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">অর্ডারকৃত পণ্যসমূহ (কালার, সাইজ ও মূল্য):</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">অর্ডারকৃত পণ্যসমূহ (গ্রাহকের নির্বাচিত সাইজ, কালার ও ছবি):</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {ord.items.map((item, i) => (
-                          <div key={i} className="flex items-center gap-3 bg-slate-900/40 p-2.5 rounded-xl border border-slate-800 text-xs">
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="w-11 h-11 object-cover rounded-xl shrink-0 border border-slate-700"
-                            />
+                          <div key={i} className="flex items-start gap-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800 text-xs">
+                            <div className="relative shrink-0">
+                              <img
+                                src={item.image}
+                                alt={item.title}
+                                className="w-14 h-14 object-cover rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xs"
+                              />
+                              <span className="absolute -bottom-1 -right-1 bg-slate-950 text-slate-300 text-[9px] font-mono px-1 rounded border border-slate-700">
+                                নির্বাচিত ছবি
+                              </span>
+                            </div>
                             <div className="flex-1 min-w-0">
-                              <div className="font-bold text-slate-200 truncate">{item.title}</div>
-                              {item.variant && Object.keys(item.variant).length > 0 && (
-                                <div className="text-[10px] text-amber-300/90 font-medium">
-                                  {Object.entries(item.variant).map(([k, v]) => `${k}: ${v}`).join(' | ')}
-                                </div>
-                              )}
-                              <div className="text-[11px] text-slate-400 mt-0.5">
-                                {formatPrice(item.price)} × {item.quantity} টি = <strong className="text-white">{formatPrice(item.price * item.quantity)}</strong>
+                              <div className="font-bold text-slate-100 truncate">{item.title}</div>
+                              
+                              {/* Customer's Selected Size & Color Badges */}
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                {item.selectedSize && (
+                                  <span className="inline-flex items-center text-[10px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-500/30">
+                                    সাইজ: {item.selectedSize}
+                                  </span>
+                                )}
+                                {item.selectedColor && (
+                                  <span className="inline-flex items-center text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-500/30">
+                                    কালার: {item.selectedColor}
+                                  </span>
+                                )}
+                                {item.variant && Object.entries(item.variant).filter(([k]) => k.toLowerCase() !== 'size' && k.toLowerCase() !== 'color').map(([k, v]) => (
+                                  <span key={k} className="text-[10px] text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded capitalize border border-slate-700">
+                                    {k}: {v}
+                                  </span>
+                                ))}
+                              </div>
+
+                              <div className="text-[11px] text-slate-400 mt-1.5">
+                                {formatPrice(item.price)} × {item.quantity} টি = <strong className="text-emerald-400 font-bold">{formatPrice(item.price * item.quantity)}</strong>
                               </div>
                             </div>
                           </div>
@@ -1188,7 +1210,13 @@ export const AdminPage: React.FC = () => {
                       />
                       <div>
                         <div className="font-bold text-white">{c.nameBn}</div>
-                        <div className="text-[11px] text-slate-400">{c.nameEn} ({c.slug})</div>
+                        <div className="text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap">
+                          <span>{c.nameEn} ({c.slug})</span>
+                          <span>•</span>
+                          <span className="text-emerald-400 font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                            {c.itemCount}টি প্রোডাক্ট লাইভ
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1235,7 +1263,7 @@ export const AdminPage: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Palette className="w-5 h-5 text-amber-400" />
-                  <span>১-ক্লিকে কালার থিম নির্বাচন (Instant Color Palette Presets)</span>
+                  <span>1-ক্লিকে কালার থিম নির্বাচন (Instant Color Palette Presets)</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
                   যেকোনো একটি থিম সিলেক্ট করুন, সাথে সাথে ওয়েবসাইটের সব বাটন, ব্যাজ, হেডার ও অ্যাকসেন্ট পরিবর্তন হবে।
@@ -1513,6 +1541,95 @@ export const AdminPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Software / App Download Link Management */}
+              <div className="mt-6 pt-5 border-t border-slate-700/60">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div>
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-emerald-400" />
+                      <span>সফটওয়্যার বা মোবাইল অ্যাপ ডাউনলোড লিংক (App Download Link)</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      এখানে আপনার মোবাইল অ্যাপ বা সফটওয়্যারের লিংক (যেমন: APK ডাউনলোড লিংক, গুগল ড্রাইভ বা প্লে স্টোর লিংক) দিন।
+                    </p>
+                  </div>
+                  {siteSettings.appDownloadUrl?.trim() ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-300 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-700/60 shrink-0">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      ওয়েবসাইটে সক্রিয় রয়েছে
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-300 bg-amber-950/80 px-2.5 py-1 rounded-full border border-amber-700/60 shrink-0">
+                      লিংক দেওয়া হয়নি (বর্তমানে হাইড)
+                    </span>
+                  )}
+                </div>
+
+                <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-700 space-y-3 text-xs">
+                  <div>
+                    <label className="font-bold text-slate-200 flex items-center justify-between mb-1">
+                      <span>অ্যাপ বা সফটওয়্যারের ডাউনলোড / ইনস্টল লিংক (URL)</span>
+                      <span className="text-[10px] text-slate-400 font-normal">লিংক ফাঁকা রাখলে ওয়েবসাইটে হাইড থাকবে</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="url"
+                        value={siteSettings.appDownloadUrl || ''}
+                        onChange={(e) => updateSiteSettings({ appDownloadUrl: e.target.value })}
+                        placeholder="যেমন: https://example.com/oneroof-app.apk অথবা ড্রাইভ লিংক"
+                        className="w-full pl-3 pr-24 py-2.5 bg-slate-800 border border-slate-600 rounded-xl text-white font-mono text-xs outline-none focus:border-emerald-400"
+                      />
+                      {siteSettings.appDownloadUrl?.trim() && (
+                        <a
+                          href={siteSettings.appDownloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute right-2 top-2 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>টেস্ট করুন</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="font-bold text-slate-300 block mb-1">অ্যাপের নাম বা শিরোনাম (App Name)</label>
+                      <input
+                        type="text"
+                        value={siteSettings.appNameBn || ''}
+                        onChange={(e) => updateSiteSettings({ appNameBn: e.target.value })}
+                        placeholder="যেমন: OneRoof মোবাইল অ্যাপ"
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-300 block mb-1">সংক্ষিপ্ত বিবরণ বা সাবটাইটেল (Subtitle)</label>
+                      <input
+                        type="text"
+                        value={siteSettings.appSubtitleBn || ''}
+                        onChange={(e) => updateSiteSettings({ appSubtitleBn: e.target.value })}
+                        placeholder="যেমন: সহজ ও দ্রুত কেনাকাটায় সরাসরি ডাউনলোড করুন"
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Info notice about visibility */}
+                  <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700 text-[11px] text-slate-300 flex items-start gap-2.5">
+                    <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white">লিংক দিলে কোথায় কোথায় দেখাবে:</strong>
+                      <ul className="list-disc list-inside mt-0.5 space-y-0.5 text-slate-400">
+                        <li>ওয়েবসাইটের উপরে থাকা <span className="text-emerald-300 font-semibold">থ্রি-ডট (⋮) মেনুতে</span> ক্লিক করলে ড্রয়ারের ভেতরে সরাসরি ডাউনলোড বাটন প্রদর্শিত হবে।</li>
+                        <li>ওয়েবসাইটের <span className="text-emerald-300 font-semibold">সবার নিচে (ফুটার)</span> আকর্ষণীয় অ্যাপ ডাউনলোড কার্ড ও বাটন প্রদর্শিত হবে।</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Delivery Charges Management Card */}
@@ -1628,7 +1745,7 @@ export const AdminPage: React.FC = () => {
                     type="text"
                     value={siteSettings.deliveryNoteBn || ''}
                     onChange={(e) => updateSiteSettings({ deliveryNoteBn: e.target.value })}
-                    placeholder="যেমন: ঢাকার ভেতরে ৬০ টাকা, ঢাকার বাইরে ১২০ টাকা"
+                    placeholder="যেমন: ঢাকার ভেতরে 60 টাকা, ঢাকার বাইরে 120 টাকা"
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white outline-none focus:border-emerald-400"
                   />
                   <p className="text-[11px] text-slate-400">গ্রাহকদের সুবিধার জন্য চেকআউটে প্রদর্শিত নোট।</p>
@@ -1670,7 +1787,7 @@ export const AdminPage: React.FC = () => {
                     আধুনিক ও প্রিমিয়াম লুক। কার্ড ও বাটনে ব্যালেন্সড রাউন্ডেড কর্নার।
                   </p>
                   <div className="mt-3 h-7 w-full bg-slate-800 rounded-2xl border border-indigo-400/40 flex items-center justify-center text-[10px] text-indigo-300 font-bold">
-                    প্রিভিউ: ১৬px কর্নার
+                    প্রিভিউ: 16px কর্নার
                   </div>
                 </button>
 
@@ -1695,7 +1812,7 @@ export const AdminPage: React.FC = () => {
                     হাই-ডেনসিটি প্রফেশনাল ই-কমার্স লুক। শার্প ও স্লিক কর্নার।
                   </p>
                   <div className="mt-3 h-7 w-full bg-slate-800 rounded-md border border-amber-400/40 flex items-center justify-center text-[10px] text-amber-300 font-bold">
-                    প্রিভিউ: ৮px কর্নার
+                    প্রিভিউ: 8px কর্নার
                   </div>
                 </button>
 
@@ -1720,7 +1837,7 @@ export const AdminPage: React.FC = () => {
                     ঈদ ও বৈশাখী উৎসবের জন্য এক্সক্লুসিভ অতিরিক্ত রাউন্ড ও সফট কার্ভড লুক।
                   </p>
                   <div className="mt-3 h-7 w-full bg-slate-800 rounded-3xl border border-rose-400/40 flex items-center justify-center text-[10px] text-rose-300 font-bold">
-                    প্রিভিউ: ২৪px কার্ভড
+                    প্রিভিউ: 24px কার্ভড
                   </div>
                 </button>
               </div>
@@ -1821,7 +1938,7 @@ export const AdminPage: React.FC = () => {
                     type="text"
                     value={newSlideSubtitleBn}
                     onChange={(e) => setNewSlideSubtitleBn(e.target.value)}
-                    placeholder="যেমন: ফ্যাশন ও গ্যাজেটে ৭০% পর্যন্ত অভাবনীয় ছাড়"
+                    placeholder="যেমন: ফ্যাশন ও গ্যাজেটে 70% পর্যন্ত অভাবনীয় ছাড়"
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none"
                   />
                 </div>
@@ -1952,7 +2069,7 @@ export const AdminPage: React.FC = () => {
                     type="password"
                     value={newPinInput}
                     onChange={(e) => setNewPinInput(e.target.value)}
-                    placeholder="কমপক্ষে ৪ ডিজিটের নতুন পিন"
+                    placeholder="কমপক্ষে 4 ডিজিটের নতুন পিন"
                     required
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-amber-400 font-mono"
                   />
@@ -2110,7 +2227,7 @@ export const AdminPage: React.FC = () => {
                 <div>
                   <h4 className="text-sm font-bold text-white flex items-center gap-2">
                     <FileText className="w-4 h-4 text-amber-400" />
-                    <span>Supabase SQL সেটআপ স্ক্রিপ্ট (১-ক্লিক কপি)</span>
+                    <span>Supabase SQL সেটআপ স্ক্রিপ্ট (1-ক্লিক কপি)</span>
                   </h4>
                   <p className="text-xs text-slate-400 mt-0.5">
                     আপনার Supabase ড্যাশবোর্ডের <strong>SQL Editor</strong> এ গিয়ে নিচের কোডটি পেস্ট করে <strong>Run</strong> ক্লিক করুন।
@@ -2135,15 +2252,15 @@ export const AdminPage: React.FC = () => {
               {/* Instructions steps */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-300">
                 <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
-                  <span className="font-bold text-amber-400 block mb-1">ধাপ ১:</span>
+                  <span className="font-bold text-amber-400 block mb-1">ধাপ 1:</span>
                   <span>Supabase ড্যাশবোর্ডে গিয়ে আপনার <strong>OneRoof</strong> প্রজেক্ট ওপেন করুন।</span>
                 </div>
                 <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
-                  <span className="font-bold text-amber-400 block mb-1">ধাপ ২:</span>
+                  <span className="font-bold text-amber-400 block mb-1">ধাপ 2:</span>
                   <span>বাম পাশের মেনু থেকে <strong>SQL Editor</strong> নির্বাচন করে <strong>New query</strong> চাপুন।</span>
                 </div>
                 <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
-                  <span className="font-bold text-amber-400 block mb-1">ধাপ ৩:</span>
+                  <span className="font-bold text-amber-400 block mb-1">ধাপ 3:</span>
                   <span>উপরে "SQL কোড কপি করুন" বাটনে ক্লিক করে পেস্ট করুন এবং <strong>Run</strong> চাপুন।</span>
                 </div>
               </div>

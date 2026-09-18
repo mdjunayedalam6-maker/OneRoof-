@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { 
   Language, 
   PageView, 
@@ -65,6 +65,7 @@ interface AppContextType {
   cart: CartItem[];
   wishlist: string[];
   orders: Order[];
+  userOrders: Order[];
   currentUser: User | null;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
@@ -75,7 +76,14 @@ interface AppContextType {
   appliedCoupon: Coupon | null;
   applyCoupon: (code: string) => { success: boolean; message: string };
   removeCoupon: () => void;
-  addToCart: (product: Product, quantity?: number, variant?: Record<string, string>) => void;
+  addToCart: (
+    product: Product, 
+    quantity?: number, 
+    variant?: Record<string, string>,
+    selectedImage?: string,
+    selectedSize?: string,
+    selectedColor?: string
+  ) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
@@ -89,6 +97,7 @@ interface AppContextType {
   addToast: (message: string, type?: 'success' | 'info' | 'error') => void;
   removeToast: (id: string) => void;
   loginUser: (identifier: string, password?: string) => boolean;
+  loginWithGoogle: () => Promise<void>;
   registerUser: (userData: Partial<User>) => boolean;
   updateUserProfile: (userData: Partial<User>) => void;
   logoutUser: () => void;
@@ -214,6 +223,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
+  // Dynamic Categories: item counts are automatically and accurately synchronized with the real products in the catalog
+  const dynamicCategories = useMemo<Category[]>(() => {
+    return categories.map((cat) => {
+      const catId = (cat.id || '').trim().toLowerCase();
+      const catSlug = (cat.slug || '').trim().toLowerCase();
+      const count = products.filter((p) => {
+        if (!p.category) return false;
+        const pCat = p.category.trim().toLowerCase();
+        return pCat === catId || pCat === catSlug;
+      }).length;
+
+      return {
+        ...cat,
+        itemCount: count,
+      };
+    });
+  }, [categories, products]);
+
   // Persistent Site Settings
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
     try {
@@ -244,9 +271,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem('oneroof_orders');
-      return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+      if (saved) {
+        const parsed: Order[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Remove old hardcoded dummy orders if present
+          return parsed.filter((o) => o.id !== 'OR-88219' && o.id !== 'OR-74190');
+        }
+      }
+      return [];
     } catch {
-      return INITIAL_ORDERS;
+      return [];
     }
   });
 
@@ -265,9 +299,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [wishlist, setWishlist] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('oneroof_wishlist');
-      return saved ? JSON.parse(saved) : ['prod-1', 'prod-5'];
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return ['prod-1', 'prod-5'];
+      return [];
     }
   });
 
@@ -316,6 +350,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return null;
     }
   });
+
+  // Customer-specific orders: strictly only orders placed by the current user
+  const userOrders = useMemo(() => {
+    if (!currentUser) return [];
+    const userEmail = (currentUser.email || '').trim().toLowerCase();
+    const userPhoneDigits = (currentUser.phone || '').replace(/[^0-9]/g, '');
+
+    return orders.filter((order) => {
+      // 1. Direct userId match
+      if (order.userId && order.userId === currentUser.id) return true;
+
+      // 2. Direct customer email match
+      if (userEmail) {
+        if (order.customerEmail && order.customerEmail.trim().toLowerCase() === userEmail) return true;
+        if (order.shippingAddress?.email && order.shippingAddress.email.trim().toLowerCase() === userEmail) return true;
+      }
+
+      // 3. Direct customer phone match (last 10 digits)
+      if (userPhoneDigits.length >= 10) {
+        const orderPhone = (order.customerPhone || order.shippingAddress?.phone || '').replace(/[^0-9]/g, '');
+        if (orderPhone.length >= 10 && orderPhone.endsWith(userPhoneDigits.slice(-10))) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+  }, [orders, currentUser]);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isTrackOrderModalOpen, setIsTrackOrderModalOpen] = useState(false);
@@ -876,10 +938,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentPage('shop');
   };
 
-  const addToCart = (product: Product, quantity = 1, variant?: Record<string, string>) => {
+  const addToCart = (
+    product: Product, 
+    quantity = 1, 
+    variant?: Record<string, string>,
+    selectedImage?: string,
+    selectedSize?: string,
+    selectedColor?: string
+  ) => {
+    const finalSize = selectedSize || variant?.['size'] || variant?.['Size'];
+    const finalColor = selectedColor || variant?.['color'] || variant?.['Color'];
+    const finalImage = selectedImage || product.images?.[0] || '';
+
     setCart((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.product.id === product.id && JSON.stringify(item.selectedVariant) === JSON.stringify(variant)
+        (item) => 
+          item.product.id === product.id && 
+          JSON.stringify(item.selectedVariant) === JSON.stringify(variant) &&
+          item.selectedSize === finalSize &&
+          item.selectedColor === finalColor
       );
 
       if (existingIndex > -1) {
@@ -887,7 +964,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updated[existingIndex].quantity += quantity;
         return updated;
       } else {
-        return [...prev, { product, quantity, selectedVariant: variant }];
+        return [
+          ...prev, 
+          { 
+            product, 
+            quantity, 
+            selectedVariant: variant,
+            selectedSize: finalSize,
+            selectedColor: finalColor,
+            selectedImage: finalImage
+          }
+        ];
       }
     });
 
@@ -941,24 +1028,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         code: 'ONEROOF10',
         discountPercent: 10,
         minSpend: 1000,
-        description: language === 'bn' ? '১০% ফ্ল্যাট ডিসকাউন্ট' : '10% Flat Discount',
+        description: language === 'bn' ? '10% ফ্ল্যাট ডিসকাউন্ট' : '10% Flat Discount',
       };
       setAppliedCoupon(coupon);
       return { 
         success: true, 
-        message: language === 'bn' ? '১০% ডিসকাউন্ট কুপন সফলভাবে যুক্ত হয়েছে!' : '10% Discount applied successfully!' 
+        message: language === 'bn' ? '10% ডিসকাউন্ট কুপন সফলভাবে যুক্ত হয়েছে!' : '10% Discount applied successfully!' 
       };
     } else if (trimmed === 'EID500') {
       const coupon: Coupon = {
         code: 'EID500',
         fixedDiscount: 500,
         minSpend: 3000,
-        description: language === 'bn' ? '৳৫০০ ঈদ স্পেশাল ক্যাশব্যাক' : '৳500 Special Eid Cashback',
+        description: language === 'bn' ? '৳500 ঈদ স্পেশাল ক্যাশব্যাক' : '৳500 Special Eid Cashback',
       };
       setAppliedCoupon(coupon);
       return { 
         success: true, 
-        message: language === 'bn' ? '৳৫০০ ছাড় সফলভাবে যুক্ত হয়েছে!' : '৳500 Discount applied!' 
+        message: language === 'bn' ? '৳500 ছাড় সফলভাবে যুক্ত হয়েছে!' : '৳500 Discount applied!' 
       };
     } else {
       return { 
@@ -1102,8 +1189,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: language === 'bn' ? item.product.titleBn : item.product.titleEn,
         price: item.product.price,
         quantity: item.quantity,
-        image: item.product.images[0],
+        image: item.selectedImage || item.product.images?.[0] || '',
         variant: item.selectedVariant,
+        selectedSize: item.selectedSize || item.selectedVariant?.['size'] || item.selectedVariant?.['Size'],
+        selectedColor: item.selectedColor || item.selectedVariant?.['color'] || item.selectedVariant?.['Color'],
       })),
       subtotal: cartSubtotal,
       shippingFee: finalShippingFee,
@@ -1112,6 +1201,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       paymentMethod,
       paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid',
       shippingAddress: shippingInfo,
+      userId: currentUser?.id,
+      customerEmail: currentUser?.email || shippingInfo?.email || '',
+      customerPhone: currentUser?.phone || shippingInfo?.phone || '',
     };
 
     setOrders((prev) => [newOrder, ...prev]);
@@ -1127,6 +1219,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'success'
     );
     return newOrder;
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      // In iframe preview environments, opening OAuth inside the iframe causes Google to throw a 403 Forbidden
+      // because Google prohibits accounts.google.com from running inside an iframe.
+      // skipBrowserRedirect: true allows opening the OAuth URL in a clean top-level popup/tab.
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          skipBrowserRedirect: true
+        }
+      });
+      if (error) throw error;
+
+      if (data?.url) {
+        const authWindow = window.open(data.url, '_blank', 'width=520,height=640');
+        if (!authWindow || authWindow.closed || typeof authWindow.closed === 'undefined') {
+          // Fallback if browser popup blocker prevented window.open
+          window.location.href = data.url;
+        } else {
+          addToast(
+            language === 'bn' 
+              ? 'গুগল লগইন উইন্ডো ওপেন হয়েছে। অনুগ্রহ করে লগইন সম্পন্ন করুন।' 
+              : 'Google login window opened. Please complete your login.',
+            'info'
+          );
+        }
+      }
+    } catch (err: any) {
+      console.error('Google login error:', err);
+      addToast(
+        language === 'bn' ? `গুগল লগইন ব্যর্থ হয়েছে: ${err.message || 'আবার চেষ্টা করুন'}` : `Google login failed: ${err.message || 'Please try again'}`,
+        'error'
+      );
+    }
   };
 
   const loginUser = (identifier: string, password?: string): boolean => {
@@ -1186,6 +1315,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const cleanPhone = userData.phone?.trim() || '';
     const cleanDigits = cleanPhone.replace(/[^0-9]/g, '');
 
+    // Ensure at least one identifier is provided (either phone or email)
+    if (!cleanEmail && cleanDigits.length < 10) {
+      addToast(
+        language === 'bn' 
+          ? 'মোবাইল নম্বর অথবা ইমেইল — যেকোনো একটি অবশ্যই প্রদান করতে হবে।' 
+          : 'Please provide either a mobile number or an email address.', 
+        'error'
+      );
+      return false;
+    }
+
     // Validate uniqueness if email provided
     if (cleanEmail) {
       const existingEmail = users.find(u => (u.email || '').trim().toLowerCase() === cleanEmail);
@@ -1200,7 +1340,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // Validate phone uniqueness
+    // Validate phone uniqueness if phone provided
     if (cleanDigits.length >= 10) {
       const existingPhone = users.find(u => (u.phone || '').replace(/[^0-9]/g, '').endsWith(cleanDigits.slice(-10)));
       if (existingPhone) {
@@ -1217,9 +1357,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80';
     
     // Auto-promote owner email/phone to admin
-    const isAdmin = cleanEmail === SECRET_ADMIN_CONFIG.email || 
-                    cleanEmail === SECRET_ADMIN_CONFIG.secondaryEmail || 
-                    cleanDigits.endsWith(SECRET_ADMIN_CONFIG.phone) || 
+    const isAdmin = (Boolean(cleanEmail) && (cleanEmail === SECRET_ADMIN_CONFIG.email || cleanEmail === SECRET_ADMIN_CONFIG.secondaryEmail)) || 
+                    (cleanDigits.length >= 10 && cleanDigits.endsWith(SECRET_ADMIN_CONFIG.phone)) || 
                     userData.role === 'admin';
 
     const fullAddrString = [userData.village, userData.thana, userData.district, userData.division]
@@ -1295,10 +1434,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedProduct,
         viewProductDetails,
         products,
-        categories,
+        categories: dynamicCategories,
         cart,
         wishlist,
         orders,
+        userOrders,
         currentUser,
         isAuthModalOpen,
         setIsAuthModalOpen,
@@ -1323,6 +1463,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addToast,
         removeToast,
         loginUser,
+        loginWithGoogle,
         registerUser,
         updateUserProfile,
         logoutUser,

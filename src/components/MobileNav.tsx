@@ -11,10 +11,14 @@ import {
   Mail, 
   ChevronRight,
   ShieldCheck,
-  Truck
+  Truck,
+  Download,
+  Smartphone,
+  ExternalLink
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { BrandLogo } from './BrandLogo';
+import { toBengaliNumber } from '../utils/translations';
 
 export const MobileBottomBar: React.FC = () => {
   const { 
@@ -119,6 +123,7 @@ export const MobileDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     openTrackOrder,
     isUserAdmin,
     loginAdmin,
+    siteSettings,
   } = useApp();
 
   if (!isOpen) return null;
@@ -185,6 +190,35 @@ export const MobileDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = 
           )}
         </div>
 
+        {/* App Download / Install Banner in Drawer (Shows when link is provided in admin) */}
+        {siteSettings?.appDownloadUrl?.trim() && (
+          <div className="p-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between gap-2 shadow-inner">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                <Download className="w-4 h-4 text-white animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-bold truncate">
+                  {siteSettings.appNameBn || (language === 'bn' ? 'OneRoof মোবাইল অ্যাপ' : 'OneRoof Mobile App')}
+                </div>
+                <div className="text-[10px] text-emerald-100 truncate">
+                  {siteSettings.appSubtitleBn || (language === 'bn' ? 'ডাউনলোড ও ইনস্টল করুন' : 'Download & Install App')}
+                </div>
+              </div>
+            </div>
+            <a
+              href={siteSettings.appDownloadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+              className="px-2.5 py-1 bg-white text-emerald-800 rounded-lg text-xs font-black hover:bg-emerald-50 transition-colors shrink-0 shadow-xs flex items-center gap-1 cursor-pointer"
+            >
+              <span>{language === 'bn' ? 'ইনস্টল' : 'Get'}</span>
+              <ExternalLink className="w-3 h-3 text-emerald-700" />
+            </a>
+          </div>
+        )}
+
         {/* Language Selection */}
         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between text-xs">
           <span className="font-medium text-slate-600">ভাষা / Language:</span>
@@ -224,7 +258,12 @@ export const MobileDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                 className="w-full flex items-center justify-between p-2.5 rounded-lg text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-left"
               >
                 <span>{language === 'bn' ? cat.nameBn : cat.nameEn}</span>
-                <ChevronRight className="w-4 h-4 text-slate-400" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-slate-400 font-normal">
+                    {language === 'bn' ? `${toBengaliNumber(cat.itemCount)}টি` : `${cat.itemCount}`}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </div>
               </button>
             ))}
           </div>
@@ -240,6 +279,26 @@ export const MobileDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = 
               <Truck className="w-4 h-4 text-orange-600" />
               <span>{language === 'bn' ? 'লাইভ অর্ডার ট্র্যাকিং' : 'Track Order'}</span>
             </button>
+
+            {siteSettings?.appDownloadUrl?.trim() && (
+              <a
+                href={siteSettings.appDownloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                onClick={onClose}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs transition-colors cursor-pointer border border-emerald-200"
+              >
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-emerald-600" />
+                  <span>{language === 'bn' ? 'মোবাইল অ্যাপ ডাউনলোড করুন' : 'Download Mobile App'}</span>
+                </div>
+                <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded font-bold flex items-center gap-1">
+                  <Download className="w-3 h-3" />
+                  <span>APK</span>
+                </span>
+              </a>
+            )}
 
             {currentUser && isUserAdmin(currentUser) && (
               <button

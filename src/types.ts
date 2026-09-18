@@ -35,6 +35,9 @@ export interface SiteSettings {
   messengerLink?: string;
   imoLink?: string;
   youtubeLink?: string;
+  appDownloadUrl?: string; // App / Software download/install link
+  appNameBn?: string; // e.g. OneRoof মোবাইল অ্যাপ
+  appSubtitleBn?: string; // e.g. সহজ ও দ্রুত কেনাকাটার জন্য ডাউনলোড করুন
 }
 
 export interface AdminBannerSlide {
@@ -110,6 +113,8 @@ export interface Product {
     type: 'size' | 'color' | 'weight' | 'storage';
     options: string[];
   }[];
+  sizes?: string[];
+  colors?: string[];
   specifications: Record<string, string>;
   reviews: Review[];
   warranty?: string;
@@ -124,6 +129,9 @@ export interface CartItem {
   product: Product;
   quantity: number;
   selectedVariant?: Record<string, string>;
+  selectedSize?: string;
+  selectedColor?: string;
+  selectedImage?: string;
 }
 
 export interface Coupon {
@@ -141,6 +149,8 @@ export interface OrderItem {
   quantity: number;
   image: string;
   variant?: Record<string, string>;
+  selectedSize?: string;
+  selectedColor?: string;
 }
 
 export type OrderStatus = 'placed' | 'processing' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled';
@@ -167,7 +177,11 @@ export interface Order {
     notes?: string;
     senderNumber?: string;
     trxId?: string;
+    email?: string;
   };
+  userId?: string;
+  customerEmail?: string;
+  customerPhone?: string;
 }
 
 export interface User {

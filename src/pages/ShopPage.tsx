@@ -14,6 +14,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
 import { CategorySlimBanner } from '../components/CategorySlimBanner';
+import { toBengaliNumber } from '../utils/translations';
 
 export const ShopPage: React.FC = () => {
   const {
@@ -176,7 +177,12 @@ export const ShopPage: React.FC = () => {
                   }`}
                 >
                   <span>{language === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}</span>
-                  {filterState.category === 'all' && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-mono">
+                      {language === 'bn' ? toBengaliNumber(products.length) : products.length}
+                    </span>
+                    {filterState.category === 'all' && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                  </div>
                 </button>
                 {categories.map((c) => (
                   <button
@@ -189,7 +195,12 @@ export const ShopPage: React.FC = () => {
                     }`}
                   >
                     <span>{language === 'bn' ? c.nameBn : c.nameEn}</span>
-                    {filterState.category === c.id && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-mono">
+                        {language === 'bn' ? toBengaliNumber(c.itemCount) : c.itemCount}
+                      </span>
+                      {filterState.category === c.id && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -487,11 +498,14 @@ export const ShopPage: React.FC = () => {
                       handleCategorySelect('all');
                       setIsMobileFilterOpen(false);
                     }}
-                    className={`w-full text-left px-2 py-1 text-xs font-medium rounded ${
+                    className={`w-full flex items-center justify-between px-2 py-1 text-xs font-medium rounded ${
                       filterState.category === 'all' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-700'
                     }`}
                   >
-                    সকল ক্যাটাগরি
+                    <span>{language === 'bn' ? 'সকল ক্যাটাগরি' : 'All Categories'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {language === 'bn' ? toBengaliNumber(products.length) : products.length}
+                    </span>
                   </button>
                   {categories.map((c) => (
                     <button
@@ -500,11 +514,14 @@ export const ShopPage: React.FC = () => {
                         handleCategorySelect(c.id);
                         setIsMobileFilterOpen(false);
                       }}
-                      className={`w-full text-left px-2 py-1 text-xs font-medium rounded ${
+                      className={`w-full flex items-center justify-between px-2 py-1 text-xs font-medium rounded ${
                         filterState.category === c.id ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-700'
                       }`}
                     >
-                      {language === 'bn' ? c.nameBn : c.nameEn}
+                      <span>{language === 'bn' ? c.nameBn : c.nameEn}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {language === 'bn' ? toBengaliNumber(c.itemCount) : c.itemCount}
+                      </span>
                     </button>
                   ))}
                 </div>

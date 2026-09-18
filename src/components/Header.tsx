@@ -1,5 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, MoreVertical, ShoppingCart, Heart, User, Truck, ShieldCheck } from 'lucide-react';
+import { 
+  Search, 
+  MoreVertical, 
+  ShoppingCart, 
+  Heart, 
+  User, 
+  Truck, 
+  ShieldCheck,
+  Download,
+  Smartphone,
+  ExternalLink,
+  Grid,
+  PhoneCall,
+  Store
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { BrandLogo } from './BrandLogo';
 import { MobileDrawer } from './MobileNav';
@@ -28,7 +42,9 @@ export const Header: React.FC = () => {
   const [selectedSearchCat, setSelectedSearchCat] = useState('all');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isThreeDotMenuOpen, setIsThreeDotMenuOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const threeDotRef = useRef<HTMLDivElement>(null);
 
   // Filter auto-suggestions
   const suggestions = searchInput.trim().length > 1
@@ -47,6 +63,9 @@ export const Header: React.FC = () => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setIsSearchOpen(false);
+      }
+      if (threeDotRef.current && !threeDotRef.current.contains(e.target as Node)) {
+        setIsThreeDotMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -94,15 +113,117 @@ export const Header: React.FC = () => {
 
       {/* Main Header Bar: Brand Logo on Left, Product Search & Find Button directly on Right */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3 sm:gap-6">
-        {/* Left: Mobile Navigation Toggle + Brand Logo */}
+        {/* Left: 3-Dot Navigation Toggle + Brand Logo */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0 py-0.5">
-          <button
-            onClick={() => setIsDrawerOpen(true)}
-            className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 focus:outline-none cursor-pointer"
-            aria-label="Toggle Categories"
-          >
-            <MoreVertical className="w-6 h-6" />
-          </button>
+          <div ref={threeDotRef} className="relative">
+            <button
+              onClick={() => {
+                if (siteSettings.appDownloadUrl?.trim()) {
+                  setIsThreeDotMenuOpen((prev) => !prev);
+                } else {
+                  setIsDrawerOpen(true);
+                }
+              }}
+              className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 focus:outline-none cursor-pointer relative"
+              aria-label="Toggle Menu"
+            >
+              <MoreVertical className="w-6 h-6" />
+              {siteSettings.appDownloadUrl?.trim() && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+              )}
+            </button>
+
+            {/* Dropdown Menu directly below Three-Dot Button */}
+            {isThreeDotMenuOpen && (
+              <div className="absolute top-full left-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-slate-200/80 p-2.5 z-50 animate-in fade-in slide-in-from-top-2">
+                {/* App Download / Install Action (Priority feature) */}
+                {siteSettings.appDownloadUrl?.trim() && (
+                  <div className="mb-2 p-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white rounded-xl shadow-md">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                        <Download className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-black leading-tight flex items-center gap-1.5">
+                          <span className="truncate">{siteSettings.appNameBn || (language === 'bn' ? 'OneRoof মোবাইল অ্যাপ' : 'OneRoof Mobile App')}</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 bg-white text-emerald-800 rounded">
+                            APK
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-emerald-100 mt-0.5 leading-snug line-clamp-2">
+                          {siteSettings.appSubtitleBn || (language === 'bn' ? 'সহজ ও দ্রুত কেনাকাটায় সরাসরি ডাউনলোড ও ইনস্টল করুন' : 'Fast and smooth shopping experience')}
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={siteSettings.appDownloadUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      onClick={() => setIsThreeDotMenuOpen(false)}
+                      className="mt-2.5 w-full flex items-center justify-center gap-2 py-2 bg-white hover:bg-emerald-50 text-emerald-800 rounded-lg text-xs font-black shadow-xs transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>{language === 'bn' ? 'অ্যাপ ডাউনলোড বা ইনস্টল করুন' : 'Download / Install App'}</span>
+                      <ExternalLink className="w-3 h-3 text-emerald-600" />
+                    </a>
+                  </div>
+                )}
+
+                {/* Navigation Items */}
+                <div className="space-y-0.5 text-xs font-medium text-slate-700">
+                  <button
+                    onClick={() => {
+                      setIsDrawerOpen(true);
+                      setIsThreeDotMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-100 text-left transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Grid className="w-4 h-4 text-slate-500" />
+                      <span className="font-bold text-slate-800">{language === 'bn' ? 'সকল ক্যাটাগরি ও মেনু' : 'All Categories & Menu'}</span>
+                    </div>
+                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">
+                      {categories.length}টি
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      openTrackOrder();
+                      setIsThreeDotMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-orange-50 text-orange-600 text-left transition-colors cursor-pointer font-bold"
+                  >
+                    <Truck className="w-4 h-4 text-orange-500" />
+                    <span>{language === 'bn' ? 'লাইভ অর্ডার ট্র্যাকিং' : 'Track Order'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setCurrentPage('about');
+                      setIsThreeDotMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 text-left transition-colors cursor-pointer"
+                  >
+                    <Store className="w-4 h-4 text-slate-500" />
+                    <span>{language === 'bn' ? 'আমাদের সম্পর্কে' : 'About Us'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setCurrentPage('contact');
+                      setIsThreeDotMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 text-left transition-colors cursor-pointer"
+                  >
+                    <PhoneCall className="w-4 h-4 text-slate-500" />
+                    <span>{language === 'bn' ? 'যোগাযোগ ও সাপোর্ট' : 'Contact & Support'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Brand Logo */}
           <div className="flex items-center">

@@ -99,7 +99,7 @@ export const CheckoutPage: React.FC = () => {
       return;
     }
     if (!phone.trim() || phone.length < 10) {
-      addToast(language === 'bn' ? 'দয়া করে সঠিক মোবাইল নম্বর দিন (১১ ডিজিট)' : 'Please enter a valid 11-digit phone number', 'error');
+      addToast(language === 'bn' ? 'দয়া করে সঠিক মোবাইল নম্বর দিন (11 ডিজিট)' : 'Please enter a valid 11-digit phone number', 'error');
       return;
     }
     if (!address.trim()) {
@@ -135,6 +135,7 @@ export const CheckoutPage: React.FC = () => {
           deliverySpeed: 'regular',
           senderNumber: paymentMethod === 'bkash' || paymentMethod === 'nagad' ? senderNumber : undefined,
           trxId: paymentMethod === 'bkash' || paymentMethod === 'nagad' ? trxId : undefined,
+          email: currentUser?.email || '',
         },
         paymentMethod,
         dynamicShippingFee
@@ -178,15 +179,15 @@ export const CheckoutPage: React.FC = () => {
               <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl p-4 flex items-center justify-between shadow-md">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center font-black text-sm">
-                    ১
+                    1
                   </div>
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider block">ধাপ ১ অব ২: ডেলিভারি ঠিকানা ও মাধ্যম</span>
+                    <span className="text-xs font-bold uppercase tracking-wider block">ধাপ 1 অব 2: ডেলিভারি ঠিকানা ও মাধ্যম</span>
                     <span className="text-[11px] text-emerald-100">আপনার সঠিক ঠিকানা ও মোবাইল নম্বর প্রদান করুন</span>
                   </div>
                 </div>
                 <span className="text-xs font-extrabold bg-white text-emerald-800 px-3.5 py-1.5 rounded-xl shadow-xs">
-                  ধাপ ১
+                  ধাপ 1
                 </span>
               </div>
 
@@ -194,7 +195,7 @@ export const CheckoutPage: React.FC = () => {
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-5">
                 <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
                   <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-sm">
-                    ১
+                    1
                   </div>
                   <h2 className="text-base sm:text-lg font-bold text-slate-900">
                     {language === 'bn' ? 'ডেলিভারি ঠিকানা ও যোগাযোগের তথ্য' : 'Shipping Address & Contact'}
@@ -308,7 +309,7 @@ export const CheckoutPage: React.FC = () => {
                 <div className="text-right">
                   <span className="text-[10px] text-slate-500 block uppercase font-semibold">চার্জ</span>
                   <span className="font-extrabold text-sm sm:text-base text-emerald-700">
-                    {dynamicShippingFee === 0 ? 'ফ্রি (৳০)' : formatPrice(dynamicShippingFee)}
+                    {dynamicShippingFee === 0 ? 'ফ্রি (৳0)' : formatPrice(dynamicShippingFee)}
                   </span>
                 </div>
               </div>
@@ -334,12 +335,12 @@ export const CheckoutPage: React.FC = () => {
                     <span>আগের ধাপে ফিরুন</span>
                   </button>
                   <div>
-                    <span className="text-xs font-bold uppercase tracking-wider block">ধাপ ২ অব ২: পেমেন্ট গেটওয়ে</span>
+                    <span className="text-xs font-bold uppercase tracking-wider block">ধাপ 2 অব 2: পেমেন্ট গেটওয়ে</span>
                     <span className="text-[11px] text-indigo-100">আপনার পছন্দের পেমেন্ট মাধ্যম নির্বাচন করুন</span>
                   </div>
                 </div>
                 <span className="text-xs font-extrabold bg-white text-indigo-900 px-3.5 py-1.5 rounded-xl shadow-xs">
-                  ধাপ ২
+                  ধাপ 2
                 </span>
               </div>
 
@@ -347,7 +348,7 @@ export const CheckoutPage: React.FC = () => {
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-5">
                 <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
                   <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-black text-sm">
-                    ২
+                    2
                   </div>
                   <h2 className="text-base sm:text-lg font-bold text-slate-900">
                     {t.selectPayment}
@@ -374,7 +375,7 @@ export const CheckoutPage: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-slate-500 leading-snug">সেন্ড মানি করুন</p>
-                    <span className="text-[10px] text-[#D12053] font-bold mt-2 bg-pink-100 px-2 py-0.5 rounded-md inline-block w-fit">৫% ক্যাশব্যাক</span>
+                    <span className="text-[10px] text-[#D12053] font-bold mt-2 bg-pink-100 px-2 py-0.5 rounded-md inline-block w-fit">5% ক্যাশব্যাক</span>
                   </div>
 
                   {/* Nagad */}
@@ -416,7 +417,7 @@ export const CheckoutPage: React.FC = () => {
                       </div>
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-slate-500 leading-snug">পণ্য হাতে পেয়ে মূল্য</p>
-                    <span className="text-[10px] text-emerald-700 font-bold mt-2 bg-emerald-100 px-2 py-0.5 rounded-md inline-block w-fit">১۰۰% নিরাপদ</span>
+                    <span className="text-[10px] text-emerald-700 font-bold mt-2 bg-emerald-100 px-2 py-0.5 rounded-md inline-block w-fit">1۰۰% নিরাপদ</span>
                   </div>
                 </div>
 
@@ -555,13 +556,25 @@ export const CheckoutPage: React.FC = () => {
                 return (
                   <div key={item.product.id} className="pt-2 flex items-center gap-2.5">
                     <img
-                      src={item.product.images[0]}
+                      src={item.selectedImage || item.product.images[0]}
                       alt={title}
-                      className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0"
+                      className="w-11 h-11 object-cover rounded-lg border border-slate-200 shrink-0"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-slate-800 truncate">{title}</p>
-                      <p className="text-[11px] text-slate-400">
+                      <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                        {item.selectedSize && (
+                          <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-100">
+                            সাইজ: {item.selectedSize}
+                          </span>
+                        )}
+                        {item.selectedColor && (
+                          <span className="text-[10px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-100">
+                            কালার: {item.selectedColor}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
                         {item.quantity} x {formatPrice(item.product.price)}
                       </p>
                     </div>

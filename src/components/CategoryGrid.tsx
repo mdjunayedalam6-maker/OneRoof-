@@ -11,6 +11,7 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { toBengaliNumber } from '../utils/translations';
 
 const ICON_MAP: Record<string, any> = {
   Smartphone,
@@ -74,8 +75,10 @@ export const CategoryGrid: React.FC = () => {
                 {language === 'bn' ? cat.nameBn : cat.nameEn}
               </h3>
 
-              <span className="text-[10px] text-slate-400 mt-0.5">
-                {cat.itemCount}+ {language === 'bn' ? 'পণ্য' : 'Items'}
+              <span className="text-[10px] font-medium text-slate-500 group-hover:text-emerald-700 transition-colors mt-0.5">
+                {language === 'bn' 
+                  ? `${toBengaliNumber(cat.itemCount)}টি পণ্য` 
+                  : `${cat.itemCount} ${cat.itemCount === 1 ? 'Item' : 'Items'}`}
               </span>
             </div>
           );

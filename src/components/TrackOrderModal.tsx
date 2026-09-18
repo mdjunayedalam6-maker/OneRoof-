@@ -25,6 +25,7 @@ export const TrackOrderModal: React.FC = () => {
     trackingQuery,
     setTrackingQuery,
     orders,
+    userOrders,
     formatPrice,
     language,
     setCurrentPage,
@@ -41,10 +42,13 @@ export const TrackOrderModal: React.FC = () => {
       if (trackingQuery) {
         setInputVal(trackingQuery);
         executeSearch(trackingQuery);
-      } else if (orders.length > 0) {
-        // default to latest order if available
-        setSearchedOrder(orders[0]);
-        setInputVal(orders[0].trackingNumber || orders[0].id);
+      } else if (userOrders.length > 0) {
+        // default to user's latest order if they have placed one
+        setSearchedOrder(userOrders[0]);
+        setInputVal(userOrders[0].trackingNumber || userOrders[0].id);
+      } else {
+        setSearchedOrder(null);
+        setInputVal('');
       }
     } else {
       setHasSearched(false);
@@ -180,13 +184,13 @@ export const TrackOrderModal: React.FC = () => {
             </button>
           </form>
 
-          {/* Quick Demo suggestions if not searched yet */}
-          {orders.length > 0 && (
+          {/* Quick suggestions of user's own orders if available */}
+          {userOrders.length > 0 && (
             <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto text-[11px] text-slate-300 pt-1 no-scrollbar">
               <span className="shrink-0 text-slate-400 font-medium">
-                {language === 'bn' ? 'সাম্প্রতিক অর্ডার:' : 'Recent:'}
+                {language === 'bn' ? 'আপনার সাম্প্রতিক অর্ডার:' : 'Your Recent:'}
               </span>
-              {orders.slice(0, 3).map((o) => (
+              {userOrders.slice(0, 3).map((o) => (
                 <button
                   key={o.id}
                   type="button"
@@ -376,6 +380,18 @@ export const TrackOrderModal: React.FC = () => {
                         <h6 className="text-xs font-bold text-slate-800 truncate">
                           {item.title}
                         </h6>
+                        <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                          {item.selectedSize && (
+                            <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-100">
+                              সাইজ: {item.selectedSize}
+                            </span>
+                          )}
+                          {item.selectedColor && (
+                            <span className="text-[10px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-100">
+                              কালার: {item.selectedColor}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-slate-500 mt-0.5">
                           {formatPrice(item.price)} × {item.quantity}
                         </div>
@@ -402,17 +418,17 @@ export const TrackOrderModal: React.FC = () => {
                   ? 'অনুগ্রহ করে সঠিক ট্র্যাকিং নম্বর (যেমন TRK-BD-XXXXX) অথবা অর্ডার প্রদানের সময় ব্যবহৃত মোবাইল নম্বর দিয়ে আবার চেষ্টা করুন।'
                   : 'Please verify the Tracking Number or the phone number provided during checkout and try again.'}
               </p>
-              <button
-                onClick={() => {
-                  if (orders.length > 0) {
-                    setSearchedOrder(orders[0]);
-                    setInputVal(orders[0].trackingNumber);
-                  }
-                }}
-                className="text-xs font-bold text-[#003882] hover:underline cursor-pointer"
-              >
-                {language === 'bn' ? 'সাম্প্রতিক অর্ডারটি দেখুন' : 'View recent order'}
-              </button>
+              {userOrders.length > 0 && (
+                <button
+                  onClick={() => {
+                    setSearchedOrder(userOrders[0]);
+                    setInputVal(userOrders[0].trackingNumber);
+                  }}
+                  className="text-xs font-bold text-[#003882] hover:underline cursor-pointer"
+                >
+                  {language === 'bn' ? 'আপনার সাম্প্রতিক অর্ডারটি দেখুন' : 'View your recent order'}
+                </button>
+              )}
             </div>
           ) : (
             /* Initial State */

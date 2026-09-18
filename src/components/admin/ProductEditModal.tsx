@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Image as ImageIcon, Sparkles, Check, AlertCircle, Truck, DollarSign, Trash2, Hash } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Sparkles, Check, AlertCircle, Truck, DollarSign, Trash2, Hash, Palette, Layers, Plus, Star } from 'lucide-react';
 import { Product } from '../../types';
 import { useApp } from '../../context/AppContext';
 
@@ -24,11 +24,32 @@ const PRESET_IMAGES = [
   { label: 'বই / Books', url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80' },
 ];
 
-// Helper: Converts any Bengali digits (০-৯) to clean English digits (0-9)
+const PRESET_SIZES = [
+  'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size',
+  '28', '30', '32', '34', '36', '38', '40', '42'
+];
+
+const PRESET_COLORS = [
+  { name: 'কালো', hex: '#111827', labelEn: 'Black' },
+  { name: 'সাদা', hex: '#FFFFFF', labelEn: 'White', border: true },
+  { name: 'লাল', hex: '#DC2626', labelEn: 'Red' },
+  { name: 'নীল', hex: '#2563EB', labelEn: 'Blue' },
+  { name: 'নেভি ব্লু', hex: '#1E3A8A', labelEn: 'Navy Blue' },
+  { name: 'সবুজ', hex: '#16A34A', labelEn: 'Green' },
+  { name: 'হলুদ', hex: '#EAB308', labelEn: 'Yellow' },
+  { name: 'মেরুন', hex: '#831843', labelEn: 'Maroon' },
+  { name: 'গোলাপি', hex: '#DB2777', labelEn: 'Pink' },
+  { name: 'কমলা', hex: '#EA580C', labelEn: 'Orange' },
+  { name: 'ধূসর / গ্রে', hex: '#6B7280', labelEn: 'Gray' },
+  { name: 'বেগুনি', hex: '#7C3AED', labelEn: 'Purple' },
+  { name: 'গোল্ডেন', hex: '#D97706', labelEn: 'Gold' },
+];
+
+// Helper: Converts any Bengali digits (0-9) to clean English digits (0-9)
 const toEnglishDigits = (str: string): string => {
   const bnToEn: Record<string, string> = {
-    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
-    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+    '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
+    '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
   };
   let res = str;
   for (const [bn, en] of Object.entries(bnToEn)) {
@@ -52,13 +73,20 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
   const [priceStr, setPriceStr] = useState<string>('205');
   const [originalPriceStr, setOriginalPriceStr] = useState<string>('250');
   const [stockStr, setStockStr] = useState<string>('50');
-  const [imageUrl, setImageUrl] = useState('');
+  const [images, setImages] = useState<string[]>([
+    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
+  ]);
+  const [activeImageSlot, setActiveImageSlot] = useState(0);
+  const [sizes, setSizes] = useState<string[]>([]);
+  const [customSizeInput, setCustomSizeInput] = useState('');
+  const [colors, setColors] = useState<string[]>([]);
+  const [customColorInput, setCustomColorInput] = useState('');
   const [descriptionBn, setDescriptionBn] = useState('');
   const [descriptionEn, setDescriptionEn] = useState('');
   const [tagsStr, setTagsStr] = useState('');
   const [isFlashSale, setIsFlashSale] = useState(false);
-  const [warranty, setWarranty] = useState('১ বছরের অফিসিয়াল ব্র্যান্ড ওয়ারেন্টি');
-  const [deliveryTime, setDeliveryTime] = useState('২-৩ কার্যদিবস');
+  const [warranty, setWarranty] = useState('1 বছরের অফিসিয়াল ব্র্যান্ড ওয়ারেন্টি');
+  const [deliveryTime, setDeliveryTime] = useState('2-3 কার্যদিবস');
   const [isFreeShipping, setIsFreeShipping] = useState(false);
   const [shippingInside, setShippingInside] = useState<number | undefined>(undefined);
   const [shippingOutside, setShippingOutside] = useState<number | undefined>(undefined);
@@ -75,18 +103,37 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
       setPriceStr(productToEdit.price !== undefined ? String(productToEdit.price) : '205');
       setOriginalPriceStr(productToEdit.originalPrice ? String(productToEdit.originalPrice) : '');
       setStockStr(productToEdit.stock !== undefined ? String(productToEdit.stock) : '25');
-      setImageUrl(productToEdit.images?.[0] || '');
+
+      // Product images (1 to 5)
+      const existingImages = (productToEdit.images && productToEdit.images.length > 0)
+        ? productToEdit.images.slice(0, 5)
+        : ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80'];
+      setImages(existingImages);
+      setActiveImageSlot(0);
+
+      // Product sizes
+      const existingSizes = (productToEdit.sizes && productToEdit.sizes.length > 0)
+        ? productToEdit.sizes
+        : (productToEdit.variants?.find((v) => v.type === 'size')?.options || []);
+      setSizes(existingSizes);
+
+      // Product colors
+      const existingColors = (productToEdit.colors && productToEdit.colors.length > 0)
+        ? productToEdit.colors
+        : (productToEdit.variants?.find((v) => v.type === 'color')?.options || []);
+      setColors(existingColors);
+
       setDescriptionBn(productToEdit.descriptionBn || '');
       setDescriptionEn(productToEdit.descriptionEn || '');
       setTagsStr(productToEdit.tags?.join(', ') || '');
       setIsFlashSale(Boolean(productToEdit.isFlashSale));
-      setWarranty(productToEdit.warranty || '১ বছরের অফিসিয়াল ব্র্যান্ড ওয়ারেন্টি');
-      setDeliveryTime(productToEdit.deliveryTime || '২-৩ কার্যদিবস');
+      setWarranty(productToEdit.warranty || '1 বছরের অফিসিয়াল ব্র্যান্ড ওয়ারেন্টি');
+      setDeliveryTime(productToEdit.deliveryTime || '2-3 কার্যদিবস');
       setIsFreeShipping(Boolean(productToEdit.isFreeShipping));
       setShippingInside(productToEdit.shippingInside ?? productToEdit.shippingFee);
       setShippingOutside(productToEdit.shippingOutside ?? productToEdit.shippingFee);
     } else {
-      // Default initial values for new product (e.g. 205 price as user specified)
+      // Default initial values for new product
       setTitleBn('');
       setTitleEn('');
       setCategory(categories[0]?.slug || 'electronics');
@@ -95,13 +142,16 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
       setPriceStr('205');
       setOriginalPriceStr('250');
       setStockStr('50');
-      setImageUrl('https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80');
-      setDescriptionBn('উন্নত মানের ও দীর্ঘস্থায়ী প্রিমিয়াম পণ্য। ১০০% অরিজিনাল কোয়ালিটি গ্যারান্টি।');
+      setImages(['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80']);
+      setActiveImageSlot(0);
+      setSizes(['M', 'L', 'XL']);
+      setColors(['কালো', 'নীল']);
+      setDescriptionBn('উন্নত মানের ও দীর্ঘস্থায়ী প্রিমিয়াম পণ্য। 100% অরিজিনাল কোয়ালিটি গ্যারান্টি।');
       setDescriptionEn('Premium high quality original product with full customer warranty.');
       setTagsStr('অরিজিনাল, বেস্টসেলার, ট্রেন্ডিং');
       setIsFlashSale(false);
-      setWarranty('১ বছরের অফিসিয়াল ব্র্যান্ড ওয়ারেন্টি');
-      setDeliveryTime('২-৩ কার্যদিবস');
+      setWarranty('1 বছরের অফিসিয়াল ব্র্যান্ড ওয়ারেন্টি');
+      setDeliveryTime('2-3 কার্যদিবস');
       setIsFreeShipping(false);
       setShippingInside(undefined);
       setShippingOutside(undefined);
@@ -110,18 +160,129 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Handle local file upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Single file upload for specific slot
+  const handleSingleFileUpload = (slotIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') {
-          setImageUrl(reader.result);
+          const newImages = [...images];
+          if (slotIndex < newImages.length) {
+            newImages[slotIndex] = reader.result;
+          } else if (newImages.length < 5) {
+            newImages.push(reader.result);
+          }
+          setImages(newImages);
         }
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Multiple files upload (up to 5 images)
+  const handleMultipleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const maxAllowed = 5;
+    const filesToRead: File[] = [];
+    for (let i = 0; i < Math.min(files.length, maxAllowed); i++) {
+      const f = files.item(i);
+      if (f) filesToRead.push(f);
+    }
+    
+    Promise.all(
+      filesToRead.map(
+        (file) =>
+          new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              if (typeof reader.result === 'string') resolve(reader.result);
+              else resolve('');
+            };
+            reader.readAsDataURL(file);
+          })
+      )
+    ).then((results) => {
+      const validResults = results.filter(Boolean);
+      if (validResults.length > 0) {
+        setImages(validResults.slice(0, 5));
+        setActiveImageSlot(0);
+        addToast(
+          language === 'bn' 
+            ? `${validResults.length} টি ছবি সফলভাবে লোড করা হয়েছে` 
+            : `${validResults.length} images loaded successfully`, 
+          'success'
+        );
+      }
+    });
+  };
+
+  // Add new image slot
+  const addImageSlot = () => {
+    if (images.length >= 5) {
+      addToast(language === 'bn' ? 'সর্বোচ্চ 5 টি ছবি যুক্ত করা যাবে' : 'Maximum 5 images allowed', 'error');
+      return;
+    }
+    setImages([...images, '']);
+    setActiveImageSlot(images.length);
+  };
+
+  // Remove image slot
+  const removeImageSlot = (idx: number) => {
+    if (images.length <= 1) {
+      addToast(language === 'bn' ? 'কমপক্ষে 1 টি ছবি থাকতে হবে' : 'At least 1 image is required', 'error');
+      return;
+    }
+    const filtered = images.filter((_, i) => i !== idx);
+    setImages(filtered);
+    setActiveImageSlot(Math.max(0, Math.min(activeImageSlot, filtered.length - 1)));
+  };
+
+  // Make image the primary (index 0)
+  const makeImagePrimary = (idx: number) => {
+    if (idx === 0) return;
+    const item = images[idx];
+    const remaining = images.filter((_, i) => i !== idx);
+    setImages([item, ...remaining]);
+    setActiveImageSlot(0);
+    addToast(language === 'bn' ? 'প্রধান ছবি হিসেবে সেট করা হয়েছে' : 'Set as primary main image', 'success');
+  };
+
+  // Size helpers
+  const toggleSize = (size: string) => {
+    if (sizes.includes(size)) {
+      setSizes(sizes.filter((s) => s !== size));
+    } else {
+      setSizes([...sizes, size]);
+    }
+  };
+
+  const addCustomSize = () => {
+    const trimmed = customSizeInput.trim();
+    if (!trimmed) return;
+    if (!sizes.includes(trimmed)) {
+      setSizes([...sizes, trimmed]);
+    }
+    setCustomSizeInput('');
+  };
+
+  // Color helpers
+  const toggleColor = (colorName: string) => {
+    if (colors.includes(colorName)) {
+      setColors(colors.filter((c) => c !== colorName));
+    } else {
+      setColors([...colors, colorName]);
+    }
+  };
+
+  const addCustomColor = () => {
+    const trimmed = customColorInput.trim();
+    if (!trimmed) return;
+    if (!colors.includes(trimmed)) {
+      setColors([...colors, trimmed]);
+    }
+    setCustomColorInput('');
   };
 
   const handleDeleteCurrentProduct = () => {
@@ -151,6 +312,21 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
       ? Math.round(((finalOriginalPrice - finalPrice) / finalOriginalPrice) * 100)
       : undefined;
 
+    // Filter valid images
+    const validImages = images.map((img) => img.trim()).filter(Boolean);
+    const finalImages = validImages.length > 0
+      ? validImages
+      : ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80'];
+
+    // Variants for legacy support
+    const variants = [];
+    if (sizes.length > 0) {
+      variants.push({ type: 'size' as const, options: sizes });
+    }
+    if (colors.length > 0) {
+      variants.push({ type: 'color' as const, options: colors });
+    }
+
     if (productToEdit) {
       updateProduct(productToEdit.id, {
         titleBn: titleBn.trim() || titleEn.trim(),
@@ -162,7 +338,10 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
         originalPrice: finalOriginalPrice,
         discountPercentage,
         stock: finalStock,
-        images: [imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80'],
+        images: finalImages,
+        sizes,
+        colors,
+        variants,
         descriptionBn,
         descriptionEn,
         tags,
@@ -188,7 +367,10 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
         discountPercentage,
         rating: 4.8,
         reviewCount: 1,
-        images: [imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80'],
+        images: finalImages,
+        sizes,
+        colors,
+        variants,
         stock: finalStock,
         isFlashSale,
         soldCount: 0,
@@ -401,71 +583,399 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
             </div>
           </div>
 
-          {/* Image Management (URL + Preset + File Upload) */}
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <ImageIcon className="w-4 h-4 text-indigo-600" />
-                <span>পণ্যের ছবি (Image URL বা ডিভাইস থেকে আপলোড)</span>
-              </label>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-              <div className="w-20 h-20 rounded-xl bg-white border border-slate-300 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
-                {imageUrl ? (
-                  <img
-                    src={imageUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-[10px] text-slate-400">ছবি নেই</span>
-                )}
+          {/* 1-5 Product Images Section */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-indigo-600" />
+                  <span>পণ্যের ছবি (1-5 টি ছবি আপলোড করুন)</span>
+                </label>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  সর্বোচ্চ 5 টি ছবি দিতে পারবেন। 1ম ছবিটি প্রধান ছবি (Main Thumbnail) হিসেবে প্রদর্শিত হবে।
+                </p>
               </div>
 
-              <div className="flex-1 w-full space-y-2">
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3 py-2 text-xs text-slate-900 font-medium placeholder-slate-400 bg-white border border-slate-300 rounded-xl focus:border-indigo-600 outline-none"
-                />
+              <div className="flex items-center gap-2">
+                <label className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>একসাথে একাধিক ছবি আপলোড</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleMultipleFileUpload}
+                    className="hidden"
+                  />
+                </label>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 cursor-pointer flex items-center gap-1.5 transition-colors">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>ডিভাইস থেকে ফাইল নির্বাচন করুন</span>
+                {images.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={addImageSlot}
+                    className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ ছবি যোগ করুন</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 5-Slot Thumbnails Bar */}
+            <div className="grid grid-cols-5 gap-2 pt-1">
+              {[0, 1, 2, 3, 4].map((slotIdx) => {
+                const img = images[slotIdx];
+                const isSelected = activeImageSlot === slotIdx;
+                const isPrimary = slotIdx === 0;
+
+                if (img !== undefined) {
+                  return (
+                    <div
+                      key={slotIdx}
+                      onClick={() => setActiveImageSlot(slotIdx)}
+                      className={`relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all bg-white group ${
+                        isSelected
+                          ? 'border-indigo-600 ring-2 ring-indigo-600/30'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {img ? (
+                        <img
+                          src={img}
+                          alt={`Slot ${slotIdx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-1 text-center bg-slate-100 text-slate-400">
+                          <ImageIcon className="w-5 h-5 mb-0.5" />
+                          <span className="text-[9px] font-bold">ছবি {slotIdx + 1}</span>
+                        </div>
+                      )}
+
+                      {/* Primary Badge */}
+                      {isPrimary && (
+                        <span className="absolute top-1 left-1 bg-amber-500 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded shadow-xs flex items-center gap-0.5">
+                          <Star className="w-2.5 h-2.5 fill-slate-950" />
+                          <span>প্রধান</span>
+                        </span>
+                      )}
+
+                      {/* Slot Number */}
+                      {!isPrimary && (
+                        <span className="absolute top-1 left-1 bg-slate-900/80 text-white font-bold text-[9px] px-1.5 py-0.5 rounded">
+                          #{slotIdx + 1}
+                        </span>
+                      )}
+
+                      {/* Remove Button */}
+                      {images.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeImageSlot(slotIdx);
+                          }}
+                          className="absolute top-1 right-1 p-1 bg-rose-600 hover:bg-rose-700 text-white rounded-md opacity-80 hover:opacity-100 transition-opacity"
+                          title="এই ছবিটি মুছুন"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+
+                // Empty available slot
+                return (
+                  <button
+                    key={slotIdx}
+                    type="button"
+                    onClick={addImageSlot}
+                    className="aspect-square rounded-xl border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 hover:bg-indigo-50/40 text-slate-400 hover:text-indigo-600 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="text-[10px] font-bold">ছবি {slotIdx + 1}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Currently Active Slot Editor */}
+            {images[activeImageSlot] !== undefined && (
+              <div className="p-3 bg-white rounded-xl border border-slate-200/90 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                    ছবি #{activeImageSlot + 1} সম্পাদন করছেন {activeImageSlot === 0 ? '(প্রধান ছবি)' : ''}
+                  </span>
+
+                  {activeImageSlot > 0 && images[activeImageSlot] && (
+                    <button
+                      type="button"
+                      onClick={() => makeImagePrimary(activeImageSlot)}
+                      className="text-[11px] font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-md border border-amber-200 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <Star className="w-3 h-3" />
+                      <span>এই ছবিটিকে প্রধান ছবি বানান</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={images[activeImageSlot] || ''}
+                    onChange={(e) => {
+                      const newImages = [...images];
+                      newImages[activeImageSlot] = e.target.value;
+                      setImages(newImages);
+                    }}
+                    placeholder="ছবির সরাসরি লিংক (URL) লিখুন..."
+                    className="flex-1 px-3 py-2 text-xs text-slate-900 font-medium placeholder-slate-400 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-indigo-600 outline-none"
+                  />
+
+                  <label className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 cursor-pointer flex items-center justify-center gap-1.5 transition-colors shrink-0">
+                    <Upload className="w-3.5 h-3.5 text-slate-600" />
+                    <span>ফাইল পরিবর্তন</span>
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleFileUpload}
+                      onChange={(e) => handleSingleFileUpload(activeImageSlot, e)}
                       className="hidden"
                     />
                   </label>
-                  <span className="text-[11px] text-slate-500">অথবা নিচের প্রিসেট থেকে বাছুন</span>
                 </div>
+
+                {/* Preset Suggestions for this slot */}
+                <div className="pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                    জনপ্রিয় ছবি প্রিসেট থেকে নির্বাচন করুন:
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {PRESET_IMAGES.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          const newImages = [...images];
+                          newImages[activeImageSlot] = preset.url;
+                          setImages(newImages);
+                        }}
+                        className="text-[10px] px-2 py-1 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200 rounded-md text-slate-700 font-medium transition-colors cursor-pointer"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Size Variants (সাইজ নির্বাচন) Section */}
+          <div className="p-4 bg-indigo-50/50 border border-indigo-200/80 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-indigo-600" />
+                  <span>পণ্যের সাইজ নির্বাচন (Size Options)</span>
+                </label>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  কাস্টমার কেনার সময় যেসকল সাইজ সিলেক্ট করতে পারবে তা নির্ধারণ করুন।
+                </p>
+              </div>
+
+              <span className="text-xs font-bold text-indigo-700 bg-white px-2.5 py-1 rounded-full border border-indigo-200">
+                {sizes.length} টি সাইজ যোগ হয়েছে
+              </span>
+            </div>
+
+            {/* Quick Presets for Sizes */}
+            <div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">
+                ক্লিক করে দ্রুত সাইজ অন/অফ করুন:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {PRESET_SIZES.map((s) => {
+                  const isChecked = sizes.includes(s);
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => toggleSize(s)}
+                      className={`text-xs px-2.5 py-1 rounded-lg font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                        isChecked
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-300 hover:border-indigo-300 hover:bg-indigo-50/50'
+                      }`}
+                    >
+                      {isChecked && <Check className="w-3 h-3" />}
+                      <span>{s}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Presets */}
-            <div className="pt-2 border-t border-slate-200/80">
-              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">
-                জনপ্রিয় ক্যাটাগরি ছবি প্রিসেট:
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {PRESET_IMAGES.map((preset, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setImageUrl(preset.url)}
-                    className="text-[11px] px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-md text-slate-800 font-medium transition-colors cursor-pointer"
+            {/* Custom Size Input */}
+            <div className="flex gap-2 pt-1">
+              <input
+                type="text"
+                value={customSizeInput}
+                onChange={(e) => setCustomSizeInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCustomSize();
+                  }
+                }}
+                placeholder="অন্য কোনো সাইজ লিখুন (যেমন: 44, 2 Litre, 128GB, Free Size)..."
+                className="flex-1 px-3 py-2 text-xs text-slate-900 font-medium placeholder-slate-400 bg-white border border-slate-300 rounded-xl focus:border-indigo-600 outline-none"
+              />
+              <button
+                type="button"
+                onClick={addCustomSize}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0"
+              >
+                + সাইজ যোগ
+              </button>
+            </div>
+
+            {/* Active Selected Sizes List */}
+            {sizes.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[11px] font-bold text-slate-600">নির্বাচিত সাইজ:</span>
+                {sizes.map((s) => (
+                  <span
+                    key={s}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-indigo-900 border border-indigo-200 text-xs font-bold rounded-lg shadow-2xs"
                   >
-                    {preset.label}
-                  </button>
+                    <span>{s}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleSize(s)}
+                      className="text-slate-400 hover:text-rose-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
                 ))}
               </div>
+            ) : (
+              <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                ⚠️ কোনো সাইজ সিলেক্ট করা নেই। প্রয়োজন হলে উপরের সাইজে ক্লিক করুন অথবা কাস্টম সাইজ যোগ করুন।
+              </p>
+            )}
+          </div>
+
+          {/* Color Variants (কালার নির্বাচন) Section */}
+          <div className="p-4 bg-amber-50/40 border border-amber-200/80 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                  <Palette className="w-4 h-4 text-amber-600" />
+                  <span>পণ্যের কালার/রং নির্বাচন (Color Options)</span>
+                </label>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  কাস্টমার কেনার সময় যেসকল কালার সিলেক্ট করতে পারবে তা নির্ধারণ করুন।
+                </p>
+              </div>
+
+              <span className="text-xs font-bold text-amber-800 bg-white px-2.5 py-1 rounded-full border border-amber-200">
+                {colors.length} টি কালার যোগ হয়েছে
+              </span>
             </div>
+
+            {/* Quick Presets for Colors */}
+            <div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block mb-1.5">
+                ক্লিক করে দ্রুত কালার অন/অফ করুন:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {PRESET_COLORS.map((c) => {
+                  const isChecked = colors.includes(c.name);
+                  return (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => toggleColor(c.name)}
+                      className={`text-xs px-2.5 py-1 rounded-lg font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                        isChecked
+                          ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                          : 'bg-white text-slate-800 border-slate-300 hover:border-amber-300 hover:bg-amber-50/50'
+                      }`}
+                    >
+                      <span
+                        className="w-3 h-3 rounded-full border border-black/20 shrink-0"
+                        style={{ backgroundColor: c.hex }}
+                      />
+                      <span>{c.name}</span>
+                      {isChecked && <Check className="w-3 h-3 text-white ml-0.5" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Color Input */}
+            <div className="flex gap-2 pt-1">
+              <input
+                type="text"
+                value={customColorInput}
+                onChange={(e) => setCustomColorInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCustomColor();
+                  }
+                }}
+                placeholder="অন্য কোনো কালার লিখুন (যেমন: গোল্ডেন, মেটালিক গ্রে, রয়্যাল ব্লু)..."
+                className="flex-1 px-3 py-2 text-xs text-slate-900 font-medium placeholder-slate-400 bg-white border border-slate-300 rounded-xl focus:border-amber-600 outline-none"
+              />
+              <button
+                type="button"
+                onClick={addCustomColor}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0"
+              >
+                + কালার যোগ
+              </button>
+            </div>
+
+            {/* Active Selected Colors List */}
+            {colors.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[11px] font-bold text-slate-600">নির্বাচিত কালার:</span>
+                {colors.map((c) => {
+                  const presetMatch = PRESET_COLORS.find((p) => p.name === c);
+                  return (
+                    <span
+                      key={c}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white text-slate-800 border border-amber-200 text-xs font-bold rounded-lg shadow-2xs"
+                    >
+                      {presetMatch && (
+                        <span
+                          className="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0"
+                          style={{ backgroundColor: presetMatch.hex }}
+                        />
+                      )}
+                      <span>{c}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleColor(c)}
+                        className="text-slate-400 hover:text-rose-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                ⚠️ কোনো কালার সিলেক্ট করা নেই। প্রয়োজন হলে উপরের কালারগুলোতে ক্লিক করুন অথবা কাস্টম কালার নাম লিখুন।
+              </p>
+            )}
           </div>
 
           {/* Descriptions */}
@@ -529,7 +1039,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                   className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
                 />
                 <label htmlFor="prodFreeShipping" className="text-xs font-bold text-slate-800 cursor-pointer select-none">
-                  🎁 ফ্রি ডেলিভারি (৳০)
+                  🎁 ফ্রি ডেলিভারি (৳0)
                 </label>
               </div>
 
@@ -544,7 +1054,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                   onChange={(e) =>
                     setShippingInside(e.target.value === '' ? undefined : Math.max(0, Number(e.target.value)))
                   }
-                  placeholder="যেমন: ৬০ (ফাঁকা রাখলে ডিফল্ট)"
+                  placeholder="যেমন: 60 (ফাঁকা রাখলে ডিফল্ট)"
                   disabled={isFreeShipping}
                   className="w-full px-3 py-1.5 text-xs text-slate-900 font-medium placeholder-slate-400 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:border-emerald-600 outline-none disabled:bg-slate-100 disabled:text-slate-400"
                 />
@@ -561,7 +1071,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                   onChange={(e) =>
                     setShippingOutside(e.target.value === '' ? undefined : Math.max(0, Number(e.target.value)))
                   }
-                  placeholder="যেমন: ১২০ (ফাঁকা রাখলে ডিফল্ট)"
+                  placeholder="যেমন: 120 (ফাঁকা রাখলে ডিফল্ট)"
                   disabled={isFreeShipping}
                   className="w-full px-3 py-1.5 text-xs text-slate-900 font-medium placeholder-slate-400 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:border-emerald-600 outline-none disabled:bg-slate-100 disabled:text-slate-400"
                 />
@@ -579,7 +1089,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                 type="text"
                 value={warranty}
                 onChange={(e) => setWarranty(e.target.value)}
-                placeholder="যেমন: ১ বছরের অফিসিয়াল ব্র্যান্ড ওয়ারেন্টি"
+                placeholder="যেমন: 1 বছরের অফিসিয়াল ব্র্যান্ড ওয়ারেন্টি"
                 className="w-full px-3 py-2 text-xs text-slate-900 font-medium placeholder-slate-400 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-indigo-600 outline-none"
               />
             </div>
@@ -591,7 +1101,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
                 type="text"
                 value={deliveryTime}
                 onChange={(e) => setDeliveryTime(e.target.value)}
-                placeholder="যেমন: ২-৩ কার্যদিবস (ঢাকা সিটিতে ২৪ ঘণ্টা)"
+                placeholder="যেমন: 2-3 কার্যদিবস (ঢাকা সিটিতে 24 ঘণ্টা)"
                 className="w-full px-3 py-2 text-xs text-slate-900 font-medium placeholder-slate-400 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-indigo-600 outline-none"
               />
             </div>

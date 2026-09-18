@@ -206,7 +206,7 @@ export async function testSupabaseConnection(): Promise<{ success: boolean; mess
     if (tables.length === 6) {
       return { 
         success: true, 
-        message: `সব টেবিল সক্রিয় ও সংযুক্ত (৬/৬ টি টেবিল প্রস্তুত)`,
+        message: `সব টেবিল সক্রিয় ও সংযুক্ত (6/6 টি টেবিল প্রস্তুত)`,
         tablesFound: tables,
         missingTables: []
       };
@@ -215,7 +215,7 @@ export async function testSupabaseConnection(): Promise<{ success: boolean; mess
     if (tables.length > 0) {
       return { 
         success: true, 
-        message: `আংশিক সংযুক্ত (${tables.length}/৬ টি টেবিল: ${tables.join(', ')})। বাকি টেবিল (${missing.join(', ')}) তৈরিতে SQL রান করুন।`,
+        message: `আংশিক সংযুক্ত (${tables.length}/6 টি টেবিল: ${tables.join(', ')})। বাকি টেবিল (${missing.join(', ')}) তৈরিতে SQL রান করুন।`,
         tablesFound: tables,
         missingTables: missing
       };

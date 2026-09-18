@@ -55,7 +55,7 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({ order, onC
               </div>
               <div className="text-[11px] text-slate-500 mt-0.5">সবকিছু এক ছাদের নিচে</div>
               <div className="text-[11px] text-slate-400 mt-1">
-                হটলাইন: ১৬৪৪৩ | support@oneroof.com.bd
+                হটলাইন: 16443 | support@oneroof.com.bd
               </div>
             </div>
 
@@ -127,11 +127,23 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({ order, onC
                       />
                       <div>
                         <div className="font-bold text-slate-800">{item.title}</div>
-                        {item.variant && (
-                          <div className="text-[10px] text-slate-400">
-                            {Object.entries(item.variant).map(([k, v]) => `${k}: ${v}`).join(', ')}
-                          </div>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                          {item.selectedSize && (
+                            <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-100">
+                              সাইজ: {item.selectedSize}
+                            </span>
+                          )}
+                          {item.selectedColor && (
+                            <span className="text-[10px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-100">
+                              কালার: {item.selectedColor}
+                            </span>
+                          )}
+                          {item.variant && Object.entries(item.variant).filter(([k]) => k.toLowerCase() !== 'size' && k.toLowerCase() !== 'color').map(([k, v]) => (
+                            <span key={k} className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded capitalize">
+                              {k}: {v}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </td>
                     <td className="py-2.5 px-2 text-center font-bold text-slate-700">{item.quantity}</td>
@@ -167,7 +179,7 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({ order, onC
 
           {/* Footer note */}
           <div className="text-center pt-4 border-t border-slate-100 text-[11px] text-slate-400">
-            OneRoof মার্কেটপ্লেস বেছে নেওয়ার জন্য ধন্যবাদ! যেকোনো অনুসন্ধানে ১৬৪৪৩ কল করুন।
+            OneRoof মার্কেটপ্লেস বেছে নেওয়ার জন্য ধন্যবাদ! যেকোনো অনুসন্ধানে 16443 কল করুন।
           </div>
         </div>
       </div>

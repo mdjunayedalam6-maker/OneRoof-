@@ -45,7 +45,7 @@ const SLIDES_DATA: BannerSlide[] = [
     subtitleBn: 'উৎসবের সেরা পোশাক, লাক্সারি পারফিউম, গিফট আইটেম ও হোম ডেকোরে অভাবনীয় ছাড়!',
     subtitleEn: 'Exclusive designer wear, premium perfumes, festive gifts and home styling at unbeatable prices!',
     coupon: 'EID70',
-    discountTextBn: '৭০% পর্যন্ত মূল্যছাড়',
+    discountTextBn: '70% পর্যন্ত মূল্যছাড়',
     discountTextEn: 'Up to 70% Off',
     btnTextBn: 'উৎসবের অফার উপভোগ করুন',
     btnTextEn: 'Explore Festive Deals',
@@ -55,14 +55,14 @@ const SLIDES_DATA: BannerSlide[] = [
   },
   {
     id: 'slide-tech',
-    badgeBn: '১০০% অফিসিয়াল ওয়ারেন্টি',
+    badgeBn: '100% অফিসিয়াল ওয়ারেন্টি',
     badgeEn: '100% Official Warranty',
     titleBn: 'ফ্ল্যাগশিপ গ্যাজেট ও স্মার্ট টেক কার্নিভাল',
     titleEn: 'Flagship Tech & Gadgets Carnival',
     subtitleBn: 'স্মার্টফোন, ওয়্যারলেস হেডফোন, ল্যাপটপ ও স্মার্টওয়াচে বিশেষ ক্যাশব্যাক ও সহজ ইএমআই।',
     subtitleEn: 'Official smartphones, noise-cancelling headphones, laptops & smartwatches with easy EMI.',
     coupon: 'TECH20',
-    discountTextBn: 'ফ্ল্যাট ২০% ক্যাশব্যাক',
+    discountTextBn: 'ফ্ল্যাট 20% ক্যাশব্যাক',
     discountTextEn: 'Flat 20% Cashback',
     btnTextBn: 'টেক অফার দেখুন',
     btnTextEn: 'Discover Gadgets',
@@ -72,14 +72,14 @@ const SLIDES_DATA: BannerSlide[] = [
   },
   {
     id: 'slide-grocery',
-    badgeBn: '১ ঘণ্টায় এক্সপ্রেস ডেলিভারি',
+    badgeBn: '1 ঘণ্টায় এক্সপ্রেস ডেলিভারি',
     badgeEn: '1-Hour Express Delivery',
     titleBn: 'খাঁটি দেশীয় খাদ্যপণ্য ও তাজা গ্রোসারি বাজার',
     titleEn: 'Pure Organic Staples & Groceries',
     subtitleBn: 'সুন্দরবনের প্রাকৃতিক মধু, ঘানিভাঙা সরিষার তেল, প্রিমিয়াম পোলাও চাল ও ফ্রেশ নিত্যপ্রয়োজনীয় বাজার।',
     subtitleEn: 'Pure natural honey, authentic cold-pressed mustard oil, aromatic rice & daily groceries delivered fast.',
     coupon: 'ORGANIC',
-    discountTextBn: '৳২০০ ইনস্ট্যান্ট ডিসকাউন্ট',
+    discountTextBn: '৳200 ইনস্ট্যান্ট ডিসকাউন্ট',
     discountTextEn: 'Up to ৳200 Off',
     btnTextBn: 'মুদি বাজার অর্ডার করুন',
     btnTextEn: 'Shop Grocery Mart',
@@ -96,7 +96,7 @@ const SLIDES_DATA: BannerSlide[] = [
     subtitleBn: 'ডিজিটাল এয়ার ফ্রায়ার, হেভি-ডিউটি ব্লেন্ডার, ওভেন ও কিচেন গ্যাজেটে অফিশিয়াল ওয়ারেন্টি।',
     subtitleEn: 'Top-rated air fryers, heavy-duty blenders, microwaves and kitchen gadgets with official service warranty.',
     coupon: 'HOME25',
-    discountTextBn: '২৫% পর্যন্ত বিশেষ ছাড়',
+    discountTextBn: '25% পর্যন্ত বিশেষ ছাড়',
     discountTextEn: 'Up to 25% Off',
     btnTextBn: 'হোম অ্যাপ্লায়েন্স দেখুন',
     btnTextEn: 'Shop Appliances',
@@ -106,14 +106,14 @@ const SLIDES_DATA: BannerSlide[] = [
   },
   {
     id: 'slide-beauty',
-    badgeBn: '১০০% অথেনটিক কোরিয়ান ও গ্লোবাল',
+    badgeBn: '100% অথেনটিক কোরিয়ান ও গ্লোবাল',
     badgeEn: '100% Authentic Beauty',
     titleBn: 'গ্লো ও স্কিনকেয়ার ফেস্ট - মেগা ডিসকাউন্ট',
     titleEn: 'Glow & Skincare Fest - Mega Deals',
     subtitleBn: 'অরিজিনাল কোরিয়ান সিরাম, সানস্ক্রিন, ফেসওয়াশ ও প্রিমিয়াম কসমেটিক্সে আকর্ষণীয় ফ্রি উপহার।',
     subtitleEn: 'Original Korean serums, sunscreens, gentle face washes & global beauty brands with free gifts.',
     coupon: 'GLOW30',
-    discountTextBn: 'বাই ১ গেট ১ / ৩০% ছাড়',
+    discountTextBn: 'বাই 1 গেট 1 / 30% ছাড়',
     discountTextEn: 'Buy 1 Get 1 / 30% Off',
     btnTextBn: 'বিউটি অফার দেখুন',
     btnTextEn: 'Shop Beauty Mart',
@@ -123,11 +123,11 @@ const SLIDES_DATA: BannerSlide[] = [
   },
   {
     id: 'slide-delivery',
-    badgeBn: '২৪ ঘণ্টায় সারা দেশে ডেলিভারি',
+    badgeBn: '24 ঘণ্টায় সারা দেশে ডেলিভারি',
     badgeEn: '24-Hour Express Shipping',
     titleBn: 'সুপার ফ্ল্যাশ ডিল ও ফ্রি হোম ডেলিভারি',
     titleEn: 'Super Flash Deals & Free Delivery',
-    subtitleBn: '৬৪ জেলায় দ্রুত ক্যাশ অন ডেলিভারি, পার্সেল খুলে দেখে পেমেন্ট করার শতভাগ নিশ্চয়তা।',
+    subtitleBn: '64 জেলায় দ্রুত ক্যাশ অন ডেলিভারি, পার্সেল খুলে দেখে পেমেন্ট করার শতভাগ নিশ্চয়তা।',
     subtitleEn: 'Fast cash on delivery across 64 districts in Bangladesh with open-box verification guarantee.',
     coupon: 'FLASHFREE',
     discountTextBn: 'ফ্রি হোম ডেলিভারি',
@@ -336,7 +336,7 @@ export const BannerSlider: React.FC = () => {
 
               <div className="hidden xs:flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-300 font-medium">
                 <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
-                <span>{language === 'bn' ? '১০০% অরিজিনাল' : '100% Original'}</span>
+                <span>{language === 'bn' ? '100% অরিজিনাল' : '100% Original'}</span>
               </div>
             </div>
           </div>

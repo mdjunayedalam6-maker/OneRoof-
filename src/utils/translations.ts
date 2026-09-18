@@ -1,17 +1,16 @@
 import { Language } from '../types';
 
 export const toBengaliNumber = (num: number | string): string => {
-  const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-  return num
-    .toString()
-    .replace(/\d/g, (d) => bengaliDigits[parseInt(d, 10)]);
+  if (num === null || num === undefined) return '';
+  const bnToEnMap: Record<string, string> = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+  };
+  return num.toString().replace(/[০-৯]/g, (d) => bnToEnMap[d] || d);
 };
 
-export const formatPrice = (amount: number, lang: Language): string => {
-  const formatted = amount.toLocaleString('en-US');
-  if (lang === 'bn') {
-    return `৳${toBengaliNumber(formatted)}`;
-  }
+export const formatPrice = (amount: number, _lang?: Language): string => {
+  const formatted = (amount || 0).toLocaleString('en-US');
   return `৳${formatted}`;
 };
 
@@ -19,7 +18,7 @@ export const TRANSLATIONS = {
   bn: {
     siteName: 'OneRoof',
     tagline: 'এক ছাদের নিচে সবকিছু',
-    topBarNotice: 'সমগ্র বাংলাদেশে ফ্রি ডেলিভারি (৳২০০০+ অর্ডারে) | হটলাইন: ১৬৪৪৩',
+    topBarNotice: 'সমগ্র বাংলাদেশে ফ্রি ডেলিভারি (৳2000+ অর্ডারে) | হটলাইন: 16443',
     searchPlaceholder: 'পণ্য, ব্র্যান্ড বা ক্যাটাগরি অনুসন্ধান করুন...',
     allCategories: 'সকল ক্যাটাগরি',
     home: 'হোম',
@@ -83,8 +82,8 @@ export const TRANSLATIONS = {
     district: 'জেলা',
     fullAddress: 'সম্পূর্ণ ঠিকানা (বাসা/রাস্তা/এলাকা)',
     deliverySpeed: 'ডেলিভারির গতি',
-    regularDelivery: 'রেগুলার ডেলিভারি (২-৩ দিন) - ৳৬০',
-    expressDelivery: 'সুপার ফাস্ট ডেলিভারি (২৪ ঘণ্টা) - ৳১২০',
+    regularDelivery: 'রেগুলার ডেলিভারি (2-3 দিন) - ৳60',
+    expressDelivery: 'সুপার ফাস্ট ডেলিভারি (24 ঘণ্টা) - ৳120',
     freeDeliveryText: 'ফ্রি ডেলিভারি প্রযোজ্য',
     selectPayment: 'পেমেন্ট মেথড নির্বাচন করুন',
     bkashDesc: 'বিকাশ অ্যাপ বা ইউএসএসডি দিয়ে ইনস্ট্যান্ট পেমেন্ট করুন',
@@ -107,14 +106,14 @@ export const TRANSLATIONS = {
     newsletterSub: 'প্রতি সপ্তাহে নতুন ডিসকাউন্ট কোড এবং এক্সক্লুসিভ অফারের খবর জানুন।',
     subscribeBtn: 'সাবস্ক্রাইব',
     trustTitle1: 'সমগ্র বাংলাদেশে ক্যাশ অন ডেলিভারি',
-    trustDesc1: '৬৪ জেলায় ঘরে বসে পণ্য হাতে পেয়ে টাকা দিন',
-    trustTitle2: '১০০% অরিজিনাল পণ্যের গ্যারান্টি',
+    trustDesc1: '64 জেলায় ঘরে বসে পণ্য হাতে পেয়ে টাকা দিন',
+    trustTitle2: '100% অরিজিনাল পণ্যের গ্যারান্টি',
     trustDesc2: 'সরাসরি ব্র্যান্ড ও অনুমোদিত ডিলারের পণ্য',
-    trustTitle3: '৭ দিনের সহজ রিপ্লেসমেন্ট',
+    trustTitle3: '7 দিনের সহজ রিপ্লেসমেন্ট',
     trustDesc3: 'কোনো সমস্যা থাকলে বিনামূল্যে বদল সুবিধা',
-    trustTitle4: '২৪/৭ সার্বক্ষণিক কাস্টমার সাপোর্ট',
-    trustDesc4: 'কল সেন্টার: ১৬৪৪৩ অথবা লাইভ চ্যাট',
-    footerAbout: 'OneRoof বাংলাদেশের সবচেয়ে দ্রুত বর্ধনশীল প্রিমিয়াম ই-কমার্স প্ল্যাটফর্ম। ইলেকট্রনিক্স, ফ্যাশন, গ্রোসারি থেকে শুরু করে ঘরের নিত্যপ্রয়োজনীয় সবকিছু এক ছাদের নিচে পৌঁছে দেয়াই আমাদের লক্ষ্য।',
+    trustTitle4: '24/7 সার্বক্ষণিক কাস্টমার সাপোর্ট',
+    trustDesc4: 'কল সেন্টার: 16443 অথবা লাইভ চ্যাট',
+    footerAbout: 'OneRoof — সারা বাংলাদেশ অনলাইন মার্কেট। 100% আসল পণ্যের নিশ্চয়তা ও দ্রুততম ক্যাশ অন ডেলিভারিতে আপনার প্রয়োজনীয় সবকিছু এক ছাদেই।',
   },
   en: {
     siteName: 'OneRoof',
@@ -214,6 +213,6 @@ export const TRANSLATIONS = {
     trustDesc3: 'Hassle-free replacement if there are issues',
     trustTitle4: '24/7 Customer Support',
     trustDesc4: 'Helpline: 16443 or live web chat anytime',
-    footerAbout: 'OneRoof is Bangladesh’s premier all-in-one e-commerce marketplace. From electronics and fashion to groceries and home essentials, we deliver quality products directly to your doorstep.',
+    footerAbout: 'OneRoof — Nationwide online marketplace across Bangladesh, delivering 100% authentic products with fast cash on delivery under one roof.',
   },
 };

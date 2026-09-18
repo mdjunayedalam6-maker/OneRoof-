@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Star, 
   ShoppingBag, 
@@ -14,10 +14,44 @@ import {
   Zap,
   Info,
   ThumbsUp,
-  MessageSquare
+  MessageSquare,
+  Layers,
+  Palette
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
+
+const COLOR_HEX_MAP: Record<string, string> = {
+  'কালো': '#111827',
+  'black': '#111827',
+  'সাদা': '#FFFFFF',
+  'white': '#FFFFFF',
+  'লাল': '#DC2626',
+  'red': '#DC2626',
+  'নীল': '#2563EB',
+  'blue': '#2563EB',
+  'নেভি ব্লু': '#1E3A8A',
+  'navy': '#1E3A8A',
+  'navy blue': '#1E3A8A',
+  'সবুজ': '#16A34A',
+  'green': '#16A34A',
+  'হলুদ': '#EAB308',
+  'yellow': '#EAB308',
+  'মেরুন': '#831843',
+  'maroon': '#831843',
+  'গোলাপি': '#DB2777',
+  'pink': '#DB2777',
+  'কমলা': '#EA580C',
+  'orange': '#EA580C',
+  'ধূসর / গ্রে': '#6B7280',
+  'ধূসর': '#6B7280',
+  'gray': '#6B7280',
+  'grey': '#6B7280',
+  'বেগুনি': '#7C3AED',
+  'purple': '#7C3AED',
+  'গোল্ডেন': '#D97706',
+  'gold': '#D97706',
+};
 
 export const ProductDetailPage: React.FC = () => {
   const {
@@ -40,6 +74,8 @@ export const ProductDetailPage: React.FC = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
+  const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'specs' | 'reviews'>('specs');
 
   // Review Form State
@@ -47,6 +83,42 @@ export const ProductDetailPage: React.FC = () => {
   const [reviewName, setReviewName] = useState('');
   const [reviewComment, setReviewComment] = useState('');
   const [showReviewForm, setShowReviewForm] = useState(false);
+
+  // Available Sizes
+  const availableSizes = useMemo(() => {
+    if (!selectedProduct) return [];
+    if (selectedProduct.sizes && selectedProduct.sizes.length > 0) {
+      return selectedProduct.sizes;
+    }
+    const found = selectedProduct.variants?.find((v) => v.type.toLowerCase() === 'size');
+    return found ? found.options : [];
+  }, [selectedProduct]);
+
+  // Available Colors
+  const availableColors = useMemo(() => {
+    if (!selectedProduct) return [];
+    if (selectedProduct.colors && selectedProduct.colors.length > 0) {
+      return selectedProduct.colors;
+    }
+    const found = selectedProduct.variants?.find((v) => v.type.toLowerCase() === 'color');
+    return found ? found.options : [];
+  }, [selectedProduct]);
+
+  useEffect(() => {
+    if (selectedProduct) {
+      setActiveImageIndex(0);
+      if (availableSizes.length > 0) {
+        setSelectedSize(availableSizes[0]);
+      } else {
+        setSelectedSize('');
+      }
+      if (availableColors.length > 0) {
+        setSelectedColor(availableColors[0]);
+      } else {
+        setSelectedColor('');
+      }
+    }
+  }, [selectedProduct, availableSizes, availableColors]);
 
   if (!selectedProduct) {
     return (
@@ -73,12 +145,22 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const handleAddToCart = () => {
-    addToCart(selectedProduct, selectedQuantity, selectedVariants);
+    const chosenImage = selectedProduct.images?.[activeImageIndex] || selectedProduct.images?.[0] || '';
+    const variantMap: Record<string, string> = { ...selectedVariants };
+    if (selectedSize) variantMap['size'] = selectedSize;
+    if (selectedColor) variantMap['color'] = selectedColor;
+
+    addToCart(selectedProduct, selectedQuantity, variantMap, chosenImage, selectedSize, selectedColor);
   };
 
   const handleBuyNow = () => {
     clearCart();
-    addToCart(selectedProduct, selectedQuantity, selectedVariants);
+    const chosenImage = selectedProduct.images?.[activeImageIndex] || selectedProduct.images?.[0] || '';
+    const variantMap: Record<string, string> = { ...selectedVariants };
+    if (selectedSize) variantMap['size'] = selectedSize;
+    if (selectedColor) variantMap['color'] = selectedColor;
+
+    addToCart(selectedProduct, selectedQuantity, variantMap, chosenImage, selectedSize, selectedColor);
     setCurrentPage('checkout');
   };
 
@@ -184,11 +266,11 @@ export const ProductDetailPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-2 mt-2 pt-4 border-t border-slate-100 text-xs text-slate-600">
             <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{language === 'bn' ? '১০০% আসল প্রোডাক্ট' : '100% Authentic'}</span>
+              <span>{language === 'bn' ? '100% আসল প্রোডাক্ট' : '100% Authentic'}</span>
             </div>
             <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl">
               <RefreshCw className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>{language === 'bn' ? '৭ দিনের রিপ্লেসমেন্ট' : '7 Days Return'}</span>
+              <span>{language === 'bn' ? '7 দিনের রিপ্লেসমেন্ট' : '7 Days Return'}</span>
             </div>
           </div>
         </div>
@@ -250,10 +332,85 @@ export const ProductDetailPage: React.FC = () => {
               {description}
             </p>
 
-            {/* Variants Selector (Color / Size / Weight / Storage) */}
-            {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+            {/* Size Selector */}
+            {availableSizes.length > 0 && (
+              <div className="space-y-2 p-3 bg-slate-50/90 rounded-2xl border border-slate-200/90">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>{language === 'bn' ? 'সাইজ নির্বাচন করুন (Size):' : 'Select Size:'}</span>
+                  </label>
+                  <span className="text-xs font-bold text-indigo-700 bg-white px-2.5 py-0.5 rounded-md border border-indigo-200 shadow-2xs">
+                    {selectedSize || (language === 'bn' ? 'সিলেক্ট করুন' : 'Select')}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  {availableSizes.map((sz) => {
+                    const isSelected = selectedSize === sz;
+                    return (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => setSelectedSize(sz)}
+                        className={`px-3.5 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs ring-2 ring-indigo-600/20'
+                            : 'bg-white text-slate-700 border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3 h-3" />}
+                        <span>{sz}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Color Selector */}
+            {availableColors.length > 0 && (
+              <div className="space-y-2 p-3 bg-slate-50/90 rounded-2xl border border-slate-200/90">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{language === 'bn' ? 'কালার / রঙ নির্বাচন করুন (Color):' : 'Select Color:'}</span>
+                  </label>
+                  <span className="text-xs font-bold text-amber-800 bg-white px-2.5 py-0.5 rounded-md border border-amber-200 shadow-2xs">
+                    {selectedColor || (language === 'bn' ? 'সিলেক্ট করুন' : 'Select')}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  {availableColors.map((clr) => {
+                    const isSelected = selectedColor === clr;
+                    const hexCode = COLOR_HEX_MAP[clr.toLowerCase()] || COLOR_HEX_MAP[clr];
+                    return (
+                      <button
+                        key={clr}
+                        type="button"
+                        onClick={() => setSelectedColor(clr)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-600/20'
+                            : 'bg-white text-slate-800 border-slate-300 hover:border-amber-400 hover:bg-amber-50/40'
+                        }`}
+                      >
+                        <span
+                          className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0"
+                          style={{ backgroundColor: hexCode || '#94A3B8' }}
+                        />
+                        <span>{clr}</span>
+                        {isSelected && <Check className="w-3 h-3 text-white ml-0.5" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Other Variants Selector (Weight / Storage if any) */}
+            {selectedProduct.variants && selectedProduct.variants.filter(v => v.type.toLowerCase() !== 'size' && v.type.toLowerCase() !== 'color').length > 0 && (
               <div className="space-y-3 pt-2">
-                {selectedProduct.variants.map((v) => (
+                {selectedProduct.variants.filter(v => v.type.toLowerCase() !== 'size' && v.type.toLowerCase() !== 'color').map((v) => (
                   <div key={v.type} className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-700 capitalize">
                       {v.type}: {selectedVariants[v.type] || v.options[0]}
@@ -357,7 +514,7 @@ export const ProductDetailPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-emerald-900 font-bold">
                 <Truck className="w-4 h-4 text-emerald-700" />
-                <span>{selectedProduct.deliveryTime || (language === 'bn' ? '২৪-৭২ ঘণ্টা সমগ্র বাংলাদেশ' : '24-72 hours nationwide delivery')}</span>
+                <span>{selectedProduct.deliveryTime || (language === 'bn' ? '24-72 ঘণ্টা সমগ্র বাংলাদেশ' : '24-72 hours nationwide delivery')}</span>
               </div>
               {selectedProduct.isFreeShipping ? (
                 <span className="text-[11px] font-bold text-white bg-emerald-600 px-2 py-0.5 rounded-full">

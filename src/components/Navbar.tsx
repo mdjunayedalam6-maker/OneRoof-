@@ -14,6 +14,7 @@ import {
   Truck
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { toBengaliNumber } from '../utils/translations';
 
 export const Navbar: React.FC = () => {
   const { 
@@ -67,7 +68,7 @@ export const Navbar: React.FC = () => {
 
             {/* Category Dropdown List */}
             {isCategoryOpen && (
-              <div className="absolute top-full left-0 w-64 bg-white text-slate-800 shadow-2xl rounded-b-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute top-full left-0 w-72 bg-white text-slate-800 shadow-2xl rounded-b-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                 {categories.map((cat) => (
                   <button
                     key={cat.id}
@@ -81,8 +82,8 @@ export const Navbar: React.FC = () => {
                       <span className="w-1.5 h-1.5 rounded-full bg-[#003882] opacity-0 group-hover:opacity-100 transition-opacity" />
                       <span>{language === 'bn' ? cat.nameBn : cat.nameEn}</span>
                     </div>
-                    <span className="text-[11px] text-slate-400 font-normal">
-                      {cat.itemCount}+
+                    <span className="text-[11px] text-slate-400 group-hover:text-[#003882] font-normal transition-colors">
+                      {language === 'bn' ? `${toBengaliNumber(cat.itemCount)}টি পণ্য` : `${cat.itemCount} items`}
                     </span>
                   </button>
                 ))}

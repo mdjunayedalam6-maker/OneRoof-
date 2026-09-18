@@ -183,7 +183,7 @@ export const FeaturedSections: React.FC = () => {
               </h2>
             </div>
             <p className="text-xs text-slate-500 max-w-sm">
-              {language === 'bn' ? '১০০% আসল পণ্য ও ব্র্যান্ডের নিজস্ব অফিশিয়াল ওয়ারেন্টি নিশ্চয়তা' : '100% authentic products with full manufacturer warranty'}
+              {language === 'bn' ? '100% আসল পণ্য ও ব্র্যান্ডের নিজস্ব অফিশিয়াল ওয়ারেন্টি নিশ্চয়তা' : '100% authentic products with full manufacturer warranty'}
             </p>
           </div>
 
