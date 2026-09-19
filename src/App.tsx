@@ -18,6 +18,8 @@ import { AdminLoginModal } from './components/admin/AdminLoginModal';
 import { TrackOrderModal } from './components/TrackOrderModal';
 import { ToastContainer } from './components/Toast';
 import { Footer } from './components/Footer';
+import { PWAInstallBanner } from './components/PWAInstallBanner';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { ArrowUp, ShieldAlert, Lock } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
@@ -140,6 +142,10 @@ const MainAppContent: React.FC = () => {
 
       {/* Notification Toast Container */}
       <ToastContainer />
+
+      {/* PWA App Install Banner & Offline Status */}
+      <PWAInstallBanner />
+      <OfflineIndicator />
 
       {/* Floating Scroll to Top Button */}
       <button

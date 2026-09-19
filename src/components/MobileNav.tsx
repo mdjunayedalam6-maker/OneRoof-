@@ -19,6 +19,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { BrandLogo } from './BrandLogo';
 import { toBengaliNumber } from '../utils/translations';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export const MobileBottomBar: React.FC = () => {
   const { 
@@ -125,6 +126,7 @@ export const MobileDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     loginAdmin,
     siteSettings,
   } = useApp();
+  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
 
   if (!isOpen) return null;
 
@@ -190,8 +192,8 @@ export const MobileDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = 
           )}
         </div>
 
-        {/* App Download / Install Banner in Drawer (Shows when link is provided in admin) */}
-        {siteSettings?.appDownloadUrl?.trim() && (
+        {/* App Download / Install Banner in Drawer */}
+        {siteSettings?.appDownloadUrl?.trim() ? (
           <div className="p-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between gap-2 shadow-inner">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
@@ -216,6 +218,34 @@ export const MobileDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = 
               <span>{language === 'bn' ? 'ইনস্টল' : 'Get'}</span>
               <ExternalLink className="w-3 h-3 text-emerald-700" />
             </a>
+          </div>
+        ) : (!isInstalled && (isInstallable || isIOS)) && (
+          <div className="p-3 bg-gradient-to-r from-[#003580] to-[#002860] text-white flex items-center justify-between gap-2 shadow-inner">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <img src="/pwa-192x192.png" alt="OneRoof" className="w-8 h-8 rounded-lg bg-white p-0.5 object-contain shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xs font-bold truncate">
+                  {language === 'bn' ? 'OneRoof মোবাইল অ্যাপ' : 'OneRoof Mobile App'}
+                </div>
+                <div className="text-[10px] text-blue-100 truncate">
+                  {language === 'bn' ? 'দ্রুত কেনাকাটায় ইনস্টল করুন' : 'Install for faster shopping'}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                if (isInstallable) {
+                  await install();
+                  onClose();
+                } else if (isIOS) {
+                  onClose();
+                }
+              }}
+              className="px-2.5 py-1 bg-white text-[#003580] rounded-lg text-xs font-black hover:bg-blue-50 transition-colors shrink-0 shadow-xs flex items-center gap-1 cursor-pointer"
+            >
+              <Download className="w-3 h-3 text-[#003580]" />
+              <span>{language === 'bn' ? 'ইনস্টল' : 'Install'}</span>
+            </button>
           </div>
         )}
 
@@ -280,7 +310,7 @@ export const MobileDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = 
               <span>{language === 'bn' ? 'লাইভ অর্ডার ট্র্যাকিং' : 'Track Order'}</span>
             </button>
 
-            {siteSettings?.appDownloadUrl?.trim() && (
+            {siteSettings?.appDownloadUrl?.trim() ? (
               <a
                 href={siteSettings.appDownloadUrl}
                 target="_blank"
@@ -298,6 +328,27 @@ export const MobileDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                   <span>APK</span>
                 </span>
               </a>
+            ) : (!isInstalled && (isInstallable || isIOS)) && (
+              <button
+                onClick={async () => {
+                  if (isInstallable) {
+                    await install();
+                    onClose();
+                  } else if (isIOS) {
+                    onClose();
+                  }
+                }}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold text-xs transition-colors cursor-pointer border border-blue-200"
+              >
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-blue-600" />
+                  <span>{language === 'bn' ? 'মোবাইল অ্যাপ ইনস্টল করুন' : 'Install Mobile App'}</span>
+                </div>
+                <span className="text-[10px] bg-[#003580] text-white px-2 py-0.5 rounded font-bold flex items-center gap-1">
+                  <Download className="w-3 h-3" />
+                  <span>App</span>
+                </span>
+              </button>
             )}
 
             {currentUser && isUserAdmin(currentUser) && (

@@ -17,6 +17,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { BrandLogo } from './BrandLogo';
 import { MobileDrawer } from './MobileNav';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export const Header: React.FC = () => {
   const {
@@ -37,6 +38,7 @@ export const Header: React.FC = () => {
     setIsAuthModalOpen,
     setIsCartDrawerOpen,
   } = useApp();
+  const { isInstallable, isInstalled, install } = usePWAInstall();
 
   const [searchInput, setSearchInput] = useState('');
   const [selectedSearchCat, setSelectedSearchCat] = useState('all');
@@ -359,6 +361,18 @@ export const Header: React.FC = () => {
 
         {/* Right: Desktop Action Icons (Track, Admin, Cart, Wishlist, User) */}
         <div className="hidden md:flex items-center gap-3 shrink-0 pl-3">
+          {/* In-App PWA Install Button on Desktop */}
+          {isInstallable && !isInstalled && (
+            <button
+              onClick={() => install()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all border border-emerald-200 cursor-pointer shadow-2xs"
+              title={language === 'bn' ? 'OneRoof অ্যাপ ইনস্টল করুন' : 'Install OneRoof App'}
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-600 animate-bounce" />
+              <span>{language === 'bn' ? 'অ্যাপ ইনস্টল' : 'Install App'}</span>
+            </button>
+          )}
+
           {/* Universal Track Order Button */}
           <button
             onClick={() => openTrackOrder()}

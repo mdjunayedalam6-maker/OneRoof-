@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { BrandLogo } from './BrandLogo';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export const Footer: React.FC = () => {
   const { 
@@ -36,6 +37,7 @@ export const Footer: React.FC = () => {
     isUserAdmin,
     loginAdmin
   } = useApp();
+  const { isInstallable, isInstalled, install } = usePWAInstall();
 
   return (
     <footer className="bg-[#0A2540] text-white pt-12 pb-24 md:pb-12 border-t border-slate-800">
@@ -134,8 +136,8 @@ export const Footer: React.FC = () => {
               )}
             </div>
 
-            {/* App / Software Download Option (Shows when link is provided in admin) */}
-            {siteSettings.appDownloadUrl?.trim() && (
+            {/* App / Software Download Option */}
+            {siteSettings.appDownloadUrl?.trim() ? (
               <div className="pt-3 pb-1 w-full max-w-lg">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3.5 p-3.5 px-4 sm:px-5 bg-gradient-to-r from-slate-900/90 via-emerald-950/60 to-slate-900/90 border border-emerald-500/40 rounded-2xl shadow-xl shadow-emerald-950/30">
                   <div className="flex items-center gap-3 text-center sm:text-left">
@@ -164,6 +166,34 @@ export const Footer: React.FC = () => {
                     <Download className="w-4 h-4" />
                     <span>{language === 'bn' ? 'ডাউনলোড করুন' : 'Download Now'}</span>
                   </a>
+                </div>
+              </div>
+            ) : (!isInstalled && isInstallable) && (
+              <div className="pt-3 pb-1 w-full max-w-lg">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3.5 p-3.5 px-4 sm:px-5 bg-gradient-to-r from-slate-900/90 via-blue-950/60 to-slate-900/90 border border-blue-500/40 rounded-2xl shadow-xl shadow-blue-950/30">
+                  <div className="flex items-center gap-3 text-center sm:text-left">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 p-1">
+                      <img src="/pwa-192x192.png" alt="OneRoof" className="w-full h-full object-contain rounded-lg" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-white flex items-center justify-center sm:justify-start gap-2">
+                        <span>{language === 'bn' ? 'OneRoof অফিসিয়াল অ্যাপ' : 'OneRoof Official App'}</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                          PWA App
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-300">
+                        {language === 'bn' ? 'ফোনে বা কম্পিউটারে ইনস্টল করে সরাসরি কেনাকাটা করুন' : 'Install on phone or computer for instant shopping'}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => install()}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white font-black text-xs rounded-xl shadow-md transition-all hover:scale-105 cursor-pointer shrink-0"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>{language === 'bn' ? 'ইনস্টল করুন' : 'Install App'}</span>
+                  </button>
                 </div>
               </div>
             )}
