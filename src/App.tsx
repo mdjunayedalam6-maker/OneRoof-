@@ -23,6 +23,7 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { ArrowUp, ShieldAlert, Lock } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
+  console.log("MainAppContent rendered");
   const { 
     currentPage, 
     setCurrentPage, 
