@@ -206,7 +206,7 @@ const ShowcasePanel: React.FC<ShowcasePanelProps> = ({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              toggleWishlist(currentProduct);
+              toggleWishlist(currentProduct.id);
             }}
             className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-slate-950/70 hover:bg-slate-900 text-white flex items-center justify-center backdrop-blur-xs transition-colors cursor-pointer"
             title="উইশলিস্টে রাখুন"

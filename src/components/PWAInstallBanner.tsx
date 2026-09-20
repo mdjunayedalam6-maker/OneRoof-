@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, Smartphone, X, Share2, PlusSquare, Check } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { useApp } from '../context/AppContext';
+import { safeSessionStorage } from '../utils/safeStorage';
 
 export const PWAInstallBanner: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
@@ -11,7 +12,7 @@ export const PWAInstallBanner: React.FC = () => {
 
   // Check if previously dismissed in session
   useEffect(() => {
-    const isDismissed = sessionStorage.getItem('pwa_banner_dismissed');
+    const isDismissed = safeSessionStorage.getItem('pwa_banner_dismissed');
     if (isDismissed === 'true') {
       setDismissed(true);
     }
@@ -19,7 +20,7 @@ export const PWAInstallBanner: React.FC = () => {
 
   const handleDismiss = () => {
     setDismissed(true);
-    sessionStorage.setItem('pwa_banner_dismissed', 'true');
+    safeSessionStorage.setItem('pwa_banner_dismissed', 'true');
   };
 
   // Do not show if already installed as PWA or dismissed

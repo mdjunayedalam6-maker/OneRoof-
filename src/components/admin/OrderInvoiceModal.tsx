@@ -14,7 +14,11 @@ export const OrderInvoiceModal: React.FC<OrderInvoiceModalProps> = ({ order, onC
   if (!order) return null;
 
   const handlePrint = () => {
-    window.print();
+    try {
+      if (typeof window !== 'undefined' && typeof window.print === 'function') {
+        window.print();
+      }
+    } catch (_) {}
   };
 
   return (

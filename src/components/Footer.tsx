@@ -205,7 +205,7 @@ export const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
         <div className="flex flex-wrap items-center gap-3">
           <p>
-            © {new Date().getFullYear()} OneRoof Marketplace Ltd. {t.allRightsReserved}
+            © {new Date().getFullYear()} OneRoof Marketplace Ltd. {language === 'bn' ? 'সর্বস্বত্ব সংরক্ষিত।' : 'All rights reserved.'}
           </p>
           <button
             onClick={() => {

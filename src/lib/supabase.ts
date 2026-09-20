@@ -186,10 +186,14 @@ export async function testSupabaseConnection(): Promise<{ success: boolean; mess
     const missing: string[] = [];
 
     const checkTable = async (tableName: string) => {
-      const { error } = await supabase.from(tableName).select('id').limit(1);
-      if (!error) {
-        tables.push(tableName);
-      } else {
+      try {
+        const { error } = await supabase.from(tableName).select('id').limit(1);
+        if (!error) {
+          tables.push(tableName);
+        } else {
+          missing.push(tableName);
+        }
+      } catch {
         missing.push(tableName);
       }
     };

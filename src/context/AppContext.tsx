@@ -44,6 +44,7 @@ import {
   SUPABASE_URL,
   SUPABASE_SETUP_SQL,
 } from '../lib/supabase';
+import { safeLocalStorage, safeSessionStorage } from '../utils/safeStorage';
 
 interface Toast {
   id: string;
@@ -189,7 +190,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    return (localStorage.getItem('oneroof_lang') as Language) || 'bn';
+    return (safeLocalStorage.getItem('oneroof_lang') as Language) || 'bn';
   });
 
   const [currentPage, setCurrentPageState] = useState<PageView>('home');
@@ -198,7 +199,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Persistent Products
   const [products, setProducts] = useState<Product[]>(() => {
     try {
-      const saved = localStorage.getItem('oneroof_products');
+      const saved = safeLocalStorage.getItem('oneroof_products');
       if (saved) {
         const parsed: Product[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -216,7 +217,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Persistent Categories
   const [categories, setCategories] = useState<Category[]>(() => {
     try {
-      const saved = localStorage.getItem('oneroof_categories');
+      const saved = safeLocalStorage.getItem('oneroof_categories');
       return saved ? JSON.parse(saved) : CATEGORIES;
     } catch {
       return CATEGORIES;
@@ -244,7 +245,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Persistent Site Settings
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
     try {
-      const saved = localStorage.getItem('oneroof_site_settings');
+      const saved = safeLocalStorage.getItem('oneroof_site_settings');
       return saved ? { ...DEFAULT_SITE_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SITE_SETTINGS;
     } catch {
       return DEFAULT_SITE_SETTINGS;
@@ -254,7 +255,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Persistent Banner Slides
   const [bannerSlides, setBannerSlides] = useState<AdminBannerSlide[]>(() => {
     try {
-      const saved = localStorage.getItem('oneroof_banner_slides');
+      const saved = safeLocalStorage.getItem('oneroof_banner_slides');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length >= 5) {
@@ -270,7 +271,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Persistent Customer Orders
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
-      const saved = localStorage.getItem('oneroof_orders');
+      const saved = safeLocalStorage.getItem('oneroof_orders');
       if (saved) {
         const parsed: Order[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
@@ -289,7 +290,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
-      const saved = localStorage.getItem('oneroof_cart');
+      const saved = safeLocalStorage.getItem('oneroof_cart');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -298,7 +299,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [wishlist, setWishlist] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('oneroof_wishlist');
+      const saved = safeLocalStorage.getItem('oneroof_wishlist');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -307,7 +308,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [users, setUsers] = useState<User[]>(() => {
     try {
-      const saved = localStorage.getItem('oneroof_users');
+      const saved = safeLocalStorage.getItem('oneroof_users');
       const parsed: User[] = saved ? JSON.parse(saved) : [];
       const hasAdmin = parsed.some(
         (u) =>
@@ -337,7 +338,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
-      const saved = localStorage.getItem('oneroof_current_user');
+      const saved = safeLocalStorage.getItem('oneroof_current_user');
       if (saved) {
         const parsed: User = JSON.parse(saved);
         if (isUserAdmin(parsed)) {
@@ -397,7 +398,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Hidden Admin Authentication & Modal State
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('oneroof_admin_auth') === 'true';
+    return safeSessionStorage.getItem('oneroof_admin_auth') === 'true';
   });
 
   // Supabase Connection & Sync State
@@ -415,6 +416,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Initial Supabase Sync on mount
   useEffect(() => {
     let isMounted = true;
+    let authUnsub: (() => void) | null = null;
+    let channelObj: any = null;
+
     const initSupabase = async () => {
       try {
         const res = await testSupabaseConnection();
@@ -459,74 +463,92 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setUsers(remoteUsers);
         }
 
-        // Setup real auth listener
-        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-          if (session?.user && event === 'SIGNED_IN') {
-            const email = session.user.email || '';
-            const phoneStr = session.user.phone || '';
-            const fullName = session.user.user_metadata?.full_name || '';
-            const avatarUrl = session.user.user_metadata?.avatar_url || '';
-            
-            setUsers(prev => {
-              const existingUser = prev.find(u => u.id === session.user.id);
-              const userObj: User = existingUser ? { ...existingUser } : {
-                id: session.user.id,
-                phone: phoneStr || email,
-                email: email,
-                name: fullName || (email ? email.split('@')[0] : 'User'),
-                avatar: avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
-                password: '', 
-                division: '',
-                district: '',
-                thana: '',
-                village: '',
-                addresses: []
-              };
+        // Setup real auth listener with error safety
+        try {
+          const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+            if (!isMounted) return;
+            if (session?.user && event === 'SIGNED_IN') {
+              const email = session.user.email || '';
+              const phoneStr = session.user.phone || '';
+              const fullName = session.user.user_metadata?.full_name || '';
+              const avatarUrl = session.user.user_metadata?.avatar_url || '';
               
-              setCurrentUser(userObj);
-              localStorage.setItem('oneroof_current_user', JSON.stringify(userObj));
+              setUsers(prev => {
+                const existingUser = prev.find(u => u.id === session.user.id);
+                const userObj: User = existingUser ? { ...existingUser } : {
+                  id: session.user.id,
+                  phone: phoneStr || email,
+                  email: email,
+                  name: fullName || (email ? email.split('@')[0] : 'User'),
+                  avatar: avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+                  password: '', 
+                  division: '',
+                  district: '',
+                  thana: '',
+                  village: '',
+                  addresses: []
+                };
+                
+                setCurrentUser(userObj);
+                safeLocalStorage.setItem('oneroof_current_user', JSON.stringify(userObj));
+                
+                if (!existingUser) {
+                  const next = [...prev, userObj];
+                  syncUserToSupabase(userObj).catch(() => {});
+                  return next;
+                }
+                return prev;
+              });
               
-              if (!existingUser) {
-                const next = [...prev, userObj];
-                syncUserToSupabase(userObj);
-                return next;
-              }
-              return prev;
-            });
-            
-            setIsAuthModalOpen(false);
-          } else if (event === 'SIGNED_OUT') {
-            setCurrentUser(null);
-            localStorage.removeItem('oneroof_current_user');
-          }
-        });
-        
-        // Setup real-time listeners for live sync across devices
-        const channel = supabase
-          .channel('oneroof-realtime')
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'orders' },
-            (payload) => {
-              if (payload.eventType === 'INSERT' && payload.new?.data) {
-                const newOrder = payload.new.data as Order;
-                setOrders((prev) => (prev.some((o) => o.id === newOrder.id) ? prev : [newOrder, ...prev]));
-              } else if (payload.eventType === 'UPDATE' && payload.new?.data) {
-                const updatedOrder = payload.new.data as Order;
-                setOrders((prev) => prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o)));
-              } else if (payload.eventType === 'DELETE' && payload.old?.id) {
-                const deletedId = payload.old.id;
-                setOrders((prev) => prev.filter((o) => o.id !== deletedId));
-              }
+              setIsAuthModalOpen(false);
+            } else if (event === 'SIGNED_OUT') {
+              setCurrentUser(null);
+              safeLocalStorage.removeItem('oneroof_current_user');
             }
-          )
-          .subscribe();
+          });
 
-        // Clean up when unmounting
-        return () => {
-          authListener.subscription.unsubscribe();
-          supabase.removeChannel(channel);
-        };
+          if (authListener?.subscription) {
+            authUnsub = () => {
+              try {
+                authListener.subscription.unsubscribe();
+              } catch (_) {}
+            };
+          }
+        } catch (authErr) {
+          console.warn('Supabase auth listener notice:', authErr);
+        }
+        
+        // Setup real-time listeners for live sync across devices with graceful error handling
+        try {
+          const channel = supabase
+            .channel('oneroof-realtime')
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'orders' },
+              (payload) => {
+                if (!isMounted) return;
+                if (payload.eventType === 'INSERT' && payload.new?.data) {
+                  const newOrder = payload.new.data as Order;
+                  setOrders((prev) => (prev.some((o) => o.id === newOrder.id) ? prev : [newOrder, ...prev]));
+                } else if (payload.eventType === 'UPDATE' && payload.new?.data) {
+                  const updatedOrder = payload.new.data as Order;
+                  setOrders((prev) => prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o)));
+                } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+                  const deletedId = payload.old.id;
+                  setOrders((prev) => prev.filter((o) => o.id !== deletedId));
+                }
+              }
+            )
+            .subscribe((status) => {
+              if (status === 'CHANNEL_ERROR') {
+                // Ignore WebSocket channel errors silently
+              }
+            });
+
+          channelObj = channel;
+        } catch (rtErr) {
+          console.warn('Supabase realtime notice:', rtErr);
+        }
 
       } catch (e) {
         console.warn('Supabase initial fetch notice:', e);
@@ -534,8 +556,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     initSupabase();
+
     return () => {
       isMounted = false;
+      try {
+        if (authUnsub) authUnsub();
+      } catch (_) {}
+      try {
+        if (channelObj) supabase.removeChannel(channelObj);
+      } catch (_) {}
     };
   }, []);
 
@@ -580,49 +609,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.documentElement.style.setProperty('--theme-accent-light', `${accent}1c`);
   }, [siteSettings.primaryColor, siteSettings.accentColor]);
 
-  // Save changes to localStorage
+  // Save changes to safeLocalStorage
   useEffect(() => {
-    localStorage.setItem('oneroof_lang', language);
+    safeLocalStorage.setItem('oneroof_lang', language);
   }, [language]);
 
   useEffect(() => {
-    localStorage.setItem('oneroof_cart', JSON.stringify(cart));
+    safeLocalStorage.setItem('oneroof_cart', JSON.stringify(cart));
   }, [cart]);
 
   useEffect(() => {
-    localStorage.setItem('oneroof_wishlist', JSON.stringify(wishlist));
+    safeLocalStorage.setItem('oneroof_wishlist', JSON.stringify(wishlist));
   }, [wishlist]);
 
   useEffect(() => {
-    localStorage.setItem('oneroof_products', JSON.stringify(products));
+    safeLocalStorage.setItem('oneroof_products', JSON.stringify(products));
   }, [products]);
 
   useEffect(() => {
-    localStorage.setItem('oneroof_categories', JSON.stringify(categories));
+    safeLocalStorage.setItem('oneroof_categories', JSON.stringify(categories));
   }, [categories]);
 
   useEffect(() => {
-    localStorage.setItem('oneroof_orders', JSON.stringify(orders));
+    safeLocalStorage.setItem('oneroof_orders', JSON.stringify(orders));
   }, [orders]);
 
   useEffect(() => {
-    localStorage.setItem('oneroof_site_settings', JSON.stringify(siteSettings));
+    safeLocalStorage.setItem('oneroof_site_settings', JSON.stringify(siteSettings));
   }, [siteSettings]);
 
   useEffect(() => {
-    localStorage.setItem('oneroof_users', JSON.stringify(users));
+    safeLocalStorage.setItem('oneroof_users', JSON.stringify(users));
   }, [users]);
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('oneroof_current_user', JSON.stringify(currentUser));
+      safeLocalStorage.setItem('oneroof_current_user', JSON.stringify(currentUser));
     } else {
-      localStorage.removeItem('oneroof_current_user');
+      safeLocalStorage.removeItem('oneroof_current_user');
     }
   }, [currentUser]);
 
   useEffect(() => {
-    localStorage.setItem('oneroof_banner_slides', JSON.stringify(bannerSlides));
+    safeLocalStorage.setItem('oneroof_banner_slides', JSON.stringify(bannerSlides));
   }, [bannerSlides]);
 
   // Apply dynamic theme colors and layout style to :root across the entire website
@@ -700,7 +729,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const validAdmin = { ...adminUser, role: 'admin' as const };
         setCurrentUser(validAdmin);
         setIsAdminAuthenticated(true);
-        sessionStorage.setItem('oneroof_admin_auth', 'true');
+        safeSessionStorage.setItem('oneroof_admin_auth', 'true');
         addToast(
           language === 'bn' 
             ? 'এডমিন কন্ট্রোল ভেরিফাইড! এডমিন প্যানেলে স্বাগতম।' 
@@ -722,7 +751,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Direct entrance if already logged in with admin credentials
     if (isUserAdmin(currentUser)) {
       setIsAdminAuthenticated(true);
-      sessionStorage.setItem('oneroof_admin_auth', 'true');
+      safeSessionStorage.setItem('oneroof_admin_auth', 'true');
       addToast(
         language === 'bn' 
           ? 'স্বাগতম এডমিন! সরাসরি এডমিন প্যানেলে প্রবেশ করেছেন।' 
@@ -743,7 +772,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logoutAdmin = () => {
     setIsAdminAuthenticated(false);
-    sessionStorage.removeItem('oneroof_admin_auth');
+    safeSessionStorage.removeItem('oneroof_admin_auth');
     if (currentPage === 'admin') {
       setCurrentPage('home');
     }
@@ -782,7 +811,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetProductsToDefault = () => {
     setProducts(INITIAL_PRODUCTS);
-    localStorage.setItem('oneroof_products', JSON.stringify(INITIAL_PRODUCTS));
+    safeLocalStorage.setItem('oneroof_products', JSON.stringify(INITIAL_PRODUCTS));
     INITIAL_PRODUCTS.forEach((p) => syncProductToSupabase(p));
     addToast(language === 'bn' ? 'ডিফল্ট প্রডাক্টগুলো রিস্টোর করা হয়েছে' : 'Default products restored', 'info');
   };
@@ -821,7 +850,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetCategoriesToDefault = () => {
     setCategories(CATEGORIES);
-    localStorage.setItem('oneroof_categories', JSON.stringify(CATEGORIES));
+    safeLocalStorage.setItem('oneroof_categories', JSON.stringify(CATEGORIES));
     syncCategoriesToSupabase(CATEGORIES);
     addToast(language === 'bn' ? 'ডিফল্ট ক্যাটাগরিগুলো রিস্টোর করা হয়েছে' : 'Default categories restored', 'info');
   };
@@ -867,7 +896,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetSiteSettings = () => {
     setSiteSettings(DEFAULT_SITE_SETTINGS);
-    localStorage.setItem('oneroof_site_settings', JSON.stringify(DEFAULT_SITE_SETTINGS));
+    safeLocalStorage.setItem('oneroof_site_settings', JSON.stringify(DEFAULT_SITE_SETTINGS));
     syncSiteSettingsToSupabase(DEFAULT_SITE_SETTINGS);
     addToast(language === 'bn' ? 'ডিফল্ট সেটিংস ও কালার রিস্টোর করা হয়েছে' : 'Default settings restored', 'info');
   };
@@ -1298,7 +1327,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(userToSet);
     if (isOwner || userToSet.role === 'admin') {
       setIsAdminAuthenticated(true);
-      sessionStorage.setItem('oneroof_admin_auth', 'true');
+      safeSessionStorage.setItem('oneroof_admin_auth', 'true');
     }
     setIsAuthModalOpen(false);
     addToast(

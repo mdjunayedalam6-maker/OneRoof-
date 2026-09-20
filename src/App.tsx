@@ -34,11 +34,19 @@ const MainAppContent: React.FC = () => {
 
   // Scroll to top on page change
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (_) {}
   }, [currentPage]);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (_) {}
   };
 
   // If viewing the admin panel, verify strict authentication and role
