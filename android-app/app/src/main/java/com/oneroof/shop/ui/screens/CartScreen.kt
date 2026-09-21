@@ -222,7 +222,7 @@ fun CartScreen(
                         Text("-৳${discount.toInt()}", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = OneRoofOrange)
                     }
                 }
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(if (language == "bn") "সর্বমোট" else "Total Amount", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     Text("৳${total.toInt()}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = OneRoofBlue)

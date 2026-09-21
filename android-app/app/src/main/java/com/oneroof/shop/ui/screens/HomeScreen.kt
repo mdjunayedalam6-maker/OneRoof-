@@ -4,24 +4,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -34,7 +28,6 @@ import com.oneroof.shop.data.model.Category
 import com.oneroof.shop.data.model.Product
 import com.oneroof.shop.ui.components.ProductCard
 import com.oneroof.shop.ui.theme.OneRoofBlue
-import com.oneroof.shop.ui.theme.OneRoofEmerald
 import com.oneroof.shop.ui.theme.OneRoofOrange
 
 @Composable
@@ -263,7 +256,7 @@ fun HomeScreen(
                 )
                 IconButton(onClick = onNavigateToShop) {
                     Icon(
-                        imageVector = Icons.Default.ArrowForward,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "Go to Shop",
                         tint = OneRoofBlue
                     )
