@@ -242,7 +242,7 @@ fun CheckoutScreen(
                         Text("-৳${discount.toInt()}", fontWeight = FontWeight.SemiBold, color = OneRoofOrange)
                     }
                 }
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(if (language == "bn") "মোট দেয়:" else "Total Payable:", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Text("৳${total.toInt()}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = OneRoofBlue)
