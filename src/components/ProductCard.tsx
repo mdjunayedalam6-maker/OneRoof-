@@ -121,7 +121,6 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
       onClick={() => viewProductDetails(product)}
       className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 hover:border-emerald-500/60 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group relative cursor-pointer"
     >
-      {/* Badges and Wishlist */}
       <div className="relative w-full pt-[100%] rounded-xl overflow-hidden bg-slate-100 mb-3">
         <img
           src={product.images[0]}
@@ -130,7 +129,6 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
           loading="lazy"
         />
 
-        {/* Badges */}
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
           {product.discountPercentage && (
             <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-xs">
@@ -150,7 +148,6 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
           )}
         </div>
 
-        {/* Wishlist Heart button */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -166,7 +163,6 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
           <Heart className={`w-4 h-4 ${isSaved ? 'fill-white' : ''}`} />
         </button>
 
-        {/* Quick View Floating Button on Hover */}
         <div className="absolute inset-x-2 bottom-2 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block z-10">
           <div
             className="w-full py-2 bg-slate-900/80 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg backdrop-blur-xs flex items-center justify-center gap-1.5 transition-colors shadow-md"
@@ -177,10 +173,8 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 flex flex-col justify-between">
         <div>
-          {/* Brand & Rating */}
           <div className="flex items-center justify-between text-[11px] mb-1.5">
             <span className="font-bold text-[#003882] bg-blue-50 px-2 py-0.5 rounded uppercase tracking-wider text-[10px]">
               {product.brand}
@@ -192,7 +186,6 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
             </div>
           </div>
 
-          {/* Title */}
           <h3
             className="text-xs sm:text-sm font-semibold text-slate-800 hover:text-[#003882] line-clamp-2 transition-colors min-h-[2.5rem] leading-snug"
           >
@@ -200,7 +193,6 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
           </h3>
         </div>
 
-        {/* Price & View Details Indicator */}
         <div className="mt-3 pt-2.5 border-t border-slate-100">
           <div className="flex items-baseline justify-between gap-1.5">
             <div className="flex items-baseline gap-1.5">
@@ -219,22 +211,6 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
               <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </span>
           </div>
-
-          {/* Flash sale progress bar if flash sale */}
-          {product.isFlashSale && product.soldCount && (
-            <div className="mt-2">
-              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className="bg-gradient-to-r from-amber-500 to-rose-500 h-1.5 rounded-full"
-                  style={{ width: `${Math.min(100, (product.soldCount / (product.soldCount + product.stock)) * 100)}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-medium">
-                <span>{language === 'bn' ? 'বিক্রিত:' : 'Sold:'} {product.soldCount}</span>
-                <span className="text-emerald-600 font-bold">{t.inStock}</span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

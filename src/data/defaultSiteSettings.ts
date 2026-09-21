@@ -25,6 +25,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   messengerLink: 'https://m.me/yourpage',
   imoLink: 'https://imo.im',
   youtubeLink: 'https://youtube.com',
+  tiktokLink: 'https://tiktok.com',
   appDownloadUrl: '',
   appNameBn: 'OneRoof মোবাইল অ্যাপ',
   appSubtitleBn: 'সহজ ও দ্রুত কেনাকাটায় সরাসরি ডাউনলোড ও ইনস্টল করুন',

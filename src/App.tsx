@@ -5,7 +5,6 @@ import { Navbar } from './components/Navbar';
 import { MobileNav } from './components/MobileNav';
 import { BannerSlider } from './components/BannerSlider';
 import { CategoryGrid } from './components/CategoryGrid';
-import { FlashSaleSection } from './components/FlashSaleSection';
 import { FeaturedSections } from './components/FeaturedSections';
 import { ShopPage } from './pages/ShopPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
@@ -113,7 +112,6 @@ const MainAppContent: React.FC = () => {
           <div className="space-y-2">
             <BannerSlider />
             <CategoryGrid />
-            <FlashSaleSection />
             <FeaturedSections />
           </div>
         )}

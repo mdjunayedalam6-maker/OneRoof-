@@ -51,31 +51,31 @@ export const CategoryGrid: React.FC = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3">
         {categories.map((cat) => {
           const IconComponent = ICON_MAP[cat.iconName] || ShoppingBag;
           return (
             <div
               key={cat.id}
               onClick={() => openCategory(cat.id)}
-              className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/80 hover:border-emerald-500 hover:shadow-lg transition-all duration-300 text-center cursor-pointer group flex flex-col items-center justify-between"
+              className="bg-white rounded-xl p-2 sm:p-3 border border-slate-200/80 hover:border-emerald-500 hover:shadow-md transition-all duration-300 text-center cursor-pointer group flex flex-col items-center justify-between"
             >
-              <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden mb-2.5 bg-emerald-50 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden mb-2 bg-emerald-50 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                 <img
                   src={cat.image}
                   alt={cat.nameBn}
                   className="w-full h-full object-cover group-hover:opacity-75 transition-opacity"
                 />
                 <div className="absolute inset-0 bg-emerald-950/20 group-hover:bg-emerald-950/40 transition-colors flex items-center justify-center">
-                  <IconComponent className="w-6 h-6 text-white drop-shadow-md" />
+                  <IconComponent className="w-5 h-5 text-white drop-shadow-md" />
                 </div>
               </div>
 
-              <h3 className="text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition-colors line-clamp-1">
+              <h3 className="text-[11px] font-bold text-slate-800 group-hover:text-emerald-700 transition-colors line-clamp-1">
                 {language === 'bn' ? cat.nameBn : cat.nameEn}
               </h3>
 
-              <span className="text-[10px] font-medium text-slate-500 group-hover:text-emerald-700 transition-colors mt-0.5">
+              <span className="text-[9px] font-medium text-slate-500 group-hover:text-emerald-700 transition-colors mt-0.5">
                 {language === 'bn' 
                   ? `${toBengaliNumber(cat.itemCount)}টি পণ্য` 
                   : `${cat.itemCount} ${cat.itemCount === 1 ? 'Item' : 'Items'}`}

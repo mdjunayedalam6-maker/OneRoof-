@@ -16,7 +16,8 @@ import {
   ThumbsUp,
   MessageSquare,
   Layers,
-  Palette
+  Palette,
+  X
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
@@ -72,6 +73,7 @@ export const ProductDetailPage: React.FC = () => {
   } = useApp();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -228,7 +230,8 @@ export const ProductDetailPage: React.FC = () => {
             <img
               src={selectedProduct.images[activeImageIndex] || selectedProduct.images[0]}
               alt={title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onClick={() => setLightboxImage(selectedProduct.images[activeImageIndex] || selectedProduct.images[0])}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-zoom-in"
             />
             {selectedProduct.discountPercentage && (
               <span className="absolute top-3 left-3 bg-rose-600 text-white text-xs font-black px-2.5 py-1 rounded-lg shadow-sm">
@@ -261,18 +264,6 @@ export const ProductDetailPage: React.FC = () => {
               ))}
             </div>
           )}
-
-          {/* Guarantee Badges Below Image */}
-          <div className="grid grid-cols-2 gap-2 mt-2 pt-4 border-t border-slate-100 text-xs text-slate-600">
-            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{language === 'bn' ? '100% আসল প্রোডাক্ট' : '100% Authentic'}</span>
-            </div>
-            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl">
-              <RefreshCw className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>{language === 'bn' ? '7 দিনের রিপ্লেসমেন্ট' : '7 Days Return'}</span>
-            </div>
-          </div>
         </div>
 
         {/* Right Column: Product Info & Actions (7 cols) */}
@@ -284,7 +275,7 @@ export const ProductDetailPage: React.FC = () => {
                 {selectedProduct.brand}
               </span>
               <span className="text-xs text-slate-400">
-                SKU: {selectedProduct.id.toUpperCase()}
+                {selectedProduct.sku ? `SKU: ${selectedProduct.sku.toUpperCase()}` : `ID: ${selectedProduct.id.toUpperCase()}`}
               </span>
             </div>
 
@@ -299,10 +290,14 @@ export const ProductDetailPage: React.FC = () => {
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 <span>{selectedProduct.rating}</span>
               </div>
-              <span className="text-slate-500">
-                {selectedProduct.reviewCount} {language === 'bn' ? 'টি কাস্টমার রিভিউ' : 'Customer Reviews'}
-              </span>
-              <span className="text-slate-300">|</span>
+              {selectedProduct.reviews.length > 0 && (
+                <>
+                  <span className="text-slate-500">
+                    {selectedProduct.reviewCount} {language === 'bn' ? 'টি কাস্টমার রিভিউ' : 'Customer Reviews'}
+                  </span>
+                  <span className="text-slate-300">|</span>
+                </>
+              )}
               <span className="text-emerald-700 font-bold flex items-center gap-1">
                 <Check className="w-3.5 h-3.5" />
                 {t.inStock} ({selectedProduct.stock} {language === 'bn' ? 'টি এভেইলেবল' : 'units left'})
@@ -555,19 +550,21 @@ export const ProductDetailPage: React.FC = () => {
           >
             {t.specifications}
           </button>
-          <button
-            onClick={() => setActiveTab('reviews')}
-            className={`text-sm sm:text-base font-bold pb-2 relative transition-colors flex items-center gap-1.5 ${
-              activeTab === 'reviews'
-                ? 'text-emerald-700 border-b-2 border-emerald-600'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>{t.reviews}</span>
-            <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
-              {selectedProduct.reviews.length}
-            </span>
-          </button>
+          {selectedProduct.reviews.length > 0 && (
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`text-sm sm:text-base font-bold pb-2 relative transition-colors flex items-center gap-1.5 ${
+                activeTab === 'reviews'
+                  ? 'text-emerald-700 border-b-2 border-emerald-600'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <span>{t.reviews}</span>
+              <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
+                {selectedProduct.reviews.length}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Tab 1: Specifications */}
@@ -790,6 +787,12 @@ export const ProductDetailPage: React.FC = () => {
           </button>
         </div>
       </div>
+      {lightboxImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setLightboxImage(null)}>
+          <button className="absolute top-4 right-4 text-white p-2" onClick={() => setLightboxImage(null)}><X /></button>
+          <img src={lightboxImage} alt={title} className="max-w-full max-h-full object-contain" />
+        </div>
+      )}
     </div>
   );
 };

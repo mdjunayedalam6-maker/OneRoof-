@@ -73,6 +73,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
   const [priceStr, setPriceStr] = useState<string>('205');
   const [originalPriceStr, setOriginalPriceStr] = useState<string>('250');
   const [stockStr, setStockStr] = useState<string>('50');
+  const [sku, setSku] = useState(''); // Added
   const [images, setImages] = useState<string[]>([
     'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
   ]);
@@ -103,6 +104,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
       setPriceStr(productToEdit.price !== undefined ? String(productToEdit.price) : '205');
       setOriginalPriceStr(productToEdit.originalPrice ? String(productToEdit.originalPrice) : '');
       setStockStr(productToEdit.stock !== undefined ? String(productToEdit.stock) : '25');
+      setSku(productToEdit.sku || '');
 
       // Product images (1 to 5)
       const existingImages = (productToEdit.images && productToEdit.images.length > 0)
@@ -142,6 +144,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
       setPriceStr('205');
       setOriginalPriceStr('250');
       setStockStr('50');
+      setSku('');
       setImages(['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80']);
       setActiveImageSlot(0);
       setSizes(['M', 'L', 'XL']);
@@ -333,6 +336,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
         titleEn: titleEn.trim() || titleBn.trim(),
         category,
         subcategory,
+        sku: sku.trim() || undefined,
         brand: brand.trim() || 'OneRoof',
         price: finalPrice,
         originalPrice: finalOriginalPrice,
@@ -355,6 +359,7 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
     } else {
       const newProd: Product = {
         id: 'prod-' + Date.now(),
+        sku: sku.trim() || undefined,
         titleBn: titleBn.trim() || titleEn.trim(),
         titleEn: titleEn.trim() || titleBn.trim(),
         descriptionBn: descriptionBn || 'প্রিমিয়াম কোয়ালিটি পণ্য।',
@@ -507,7 +512,21 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
           </div>
 
           {/* Pricing & Stock */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-800">
+                  SKU (Code)
+                </label>
+              </div>
+              <input
+                type="text"
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                placeholder="SKU-123"
+                className="w-full px-3 py-2 text-xs text-slate-900 font-medium bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-indigo-600 outline-none"
+              />
+            </div>
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-bold text-slate-800">

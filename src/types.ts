@@ -35,6 +35,7 @@ export interface SiteSettings {
   messengerLink?: string;
   imoLink?: string;
   youtubeLink?: string;
+  tiktokLink?: string;
   appDownloadUrl?: string; // App / Software download/install link
   appNameBn?: string; // e.g. OneRoof মোবাইল অ্যাপ
   appSubtitleBn?: string; // e.g. সহজ ও দ্রুত কেনাকাটার জন্য ডাউনলোড করুন
@@ -88,6 +89,7 @@ export interface Review {
 
 export interface Product {
   id: string;
+  sku?: string; // New field
   titleBn: string;
   titleEn: string;
   descriptionBn: string;

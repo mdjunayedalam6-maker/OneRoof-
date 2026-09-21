@@ -169,43 +169,6 @@ export const FeaturedSections: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. Brand Showcase */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="bg-slate-100/70 rounded-3xl p-6 sm:p-8 border border-slate-200/70">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700 mb-1">
-                <Award className="w-4 h-4 text-amber-500" />
-                <span>{language === 'bn' ? 'অফিসিয়াল পার্টনার্স' : 'Official Partners'}</span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                {language === 'bn' ? 'শীর্ষস্থানীয় জনপ্রিয় ব্র্যান্ডস' : 'Top Featured Brands'}
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 max-w-sm">
-              {language === 'bn' ? '100% আসল পণ্য ও ব্র্যান্ডের নিজস্ব অফিশিয়াল ওয়ারেন্টি নিশ্চয়তা' : '100% authentic products with full manufacturer warranty'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
-            {BRANDS.map((brand) => (
-              <div
-                key={brand.name}
-                onClick={() => handleBrandClick(brand.name)}
-                className="bg-white rounded-2xl p-4 border border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all text-center cursor-pointer group flex flex-col items-center justify-center py-5"
-              >
-                <span className="text-lg font-black tracking-widest text-slate-800 group-hover:text-emerald-700 transition-colors">
-                  {brand.logo}
-                </span>
-                <span className="text-[11px] text-slate-400 mt-1 font-medium">
-                  {brand.productsCount} {language === 'bn' ? 'পণ্য' : 'Items'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
     </div>
   );
 };

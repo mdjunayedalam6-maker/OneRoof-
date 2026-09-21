@@ -134,6 +134,18 @@ export const Footer: React.FC = () => {
                   <span className="text-xs font-bold">YouTube</span>
                 </a>
               )}
+              {siteSettings.tiktokLink && (
+                <a 
+                  href={siteSettings.tiktokLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-black text-white hover:text-white border border-white/20 transition-colors"
+                  title="TikTok"
+                >
+                  <span className="w-4 h-4 flex items-center justify-center font-black">♪</span>
+                  <span className="text-xs font-bold">TikTok</span>
+                </a>
+              )}
             </div>
 
             {/* App / Software Download Option */}

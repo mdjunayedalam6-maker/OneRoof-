@@ -1530,13 +1530,13 @@ export const AdminPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="font-bold text-slate-300 block mb-1">YouTube লিংক</label>
+                    <label className="font-bold text-slate-300 block mb-1">TikTok লিংক</label>
                     <input
                       type="text"
-                      value={siteSettings.youtubeLink || ''}
-                      onChange={(e) => updateSiteSettings({ youtubeLink: e.target.value })}
-                      placeholder="https://youtube.com/..."
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-red-500"
+                      value={siteSettings.tiktokLink || ''}
+                      onChange={(e) => updateSiteSettings({ tiktokLink: e.target.value })}
+                      placeholder="https://tiktok.com/..."
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-rose-400"
                     />
                   </div>
                 </div>

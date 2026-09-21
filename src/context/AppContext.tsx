@@ -202,15 +202,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const saved = safeLocalStorage.getItem('oneroof_products');
       if (saved) {
         const parsed: Product[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const existingIds = new Set(parsed.map((p) => p.id));
-          const missing = INITIAL_PRODUCTS.filter((p) => !existingIds.has(p.id));
-          return missing.length > 0 ? [...parsed, ...missing] : parsed;
+        if (Array.isArray(parsed)) {
+          return parsed;
         }
       }
-      return INITIAL_PRODUCTS;
+      return [];
     } catch {
-      return INITIAL_PRODUCTS;
+      return [];
     }
   });
 
@@ -427,40 +425,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setSupabaseStatusMsg(res.message);
         }
 
-        // 1. Fetch Products
-        const remoteProducts = await fetchProductsFromSupabase();
-        if (isMounted && remoteProducts && remoteProducts.length > 0) {
-          setProducts(remoteProducts);
-        }
+        // 1-6. Fetch all resources in parallel to speed up initial load
+        const [
+          remoteProducts,
+          remoteOrders,
+          remoteSettings,
+          remoteCategories,
+          remoteSlides,
+          remoteUsers
+        ] = await Promise.all([
+          fetchProductsFromSupabase(),
+          fetchOrdersFromSupabase(),
+          fetchSiteSettingsFromSupabase(),
+          fetchCategoriesFromSupabase(),
+          fetchBannerSlidesFromSupabase(),
+          fetchUsersFromSupabase()
+        ]);
 
-        // 2. Fetch Orders
-        const remoteOrders = await fetchOrdersFromSupabase();
-        if (isMounted && remoteOrders && remoteOrders.length > 0) {
-          setOrders(remoteOrders);
-        }
-
-        // 3. Fetch Settings
-        const remoteSettings = await fetchSiteSettingsFromSupabase();
-        if (isMounted && remoteSettings) {
-          setSiteSettings(remoteSettings);
-        }
-
-        // 4. Fetch Categories
-        const remoteCategories = await fetchCategoriesFromSupabase();
-        if (isMounted && remoteCategories && remoteCategories.length > 0) {
-          setCategories(remoteCategories);
-        }
-
-        // 5. Fetch Banner Slides
-        const remoteSlides = await fetchBannerSlidesFromSupabase();
-        if (isMounted && remoteSlides && remoteSlides.length > 0) {
-          setBannerSlides(remoteSlides);
-        }
-
-        // 6. Fetch Users
-        const remoteUsers = await fetchUsersFromSupabase();
-        if (isMounted && remoteUsers && remoteUsers.length > 0) {
-          setUsers(remoteUsers);
+        if (isMounted) {
+          if (remoteProducts && remoteProducts.length > 0) setProducts(remoteProducts);
+          if (remoteOrders && remoteOrders.length > 0) setOrders(remoteOrders);
+          if (remoteSettings) setSiteSettings(remoteSettings);
+          if (remoteCategories && remoteCategories.length > 0) setCategories(remoteCategories);
+          if (remoteSlides && remoteSlides.length > 0) setBannerSlides(remoteSlides);
+          if (remoteUsers && remoteUsers.length > 0) setUsers(remoteUsers);
         }
 
         // Setup real auth listener with error safety
