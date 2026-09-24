@@ -337,16 +337,24 @@ export async function deleteProductFromSupabase(productId: string): Promise<bool
 
 export async function fetchProductsFromSupabase(): Promise<Product[] | null> {
   try {
-    const { data, error } = await supabase
+    const query = supabase
       .from('products')
       .select('data')
       .order('created_at', { ascending: false });
 
+    // 8-second timeout guarantee to prevent infinite network hang
+    const timeoutPromise = new Promise<any>((_, reject) =>
+      setTimeout(() => reject(new Error('Product fetch timeout')), 8000)
+    );
+
+    const { data, error } = await Promise.race([query, timeoutPromise]);
+
     if (error || !data) {
       return null;
     }
-    return data.map((row) => row.data as Product);
-  } catch {
+    return data.map((row: any) => row.data as Product);
+  } catch (e) {
+    console.warn('Supabase fetchProducts notice:', e);
     return null;
   }
 }

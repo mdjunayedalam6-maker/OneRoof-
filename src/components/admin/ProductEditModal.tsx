@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Upload, Image as ImageIcon, Sparkles, Check, AlertCircle, Truck, DollarSign, Trash2, Hash, Palette, Layers, Plus, Star } from 'lucide-react';
 import { Product } from '../../types';
 import { useApp } from '../../context/AppContext';
+import { compressImageFile } from '../../utils/imageCompressor';
 
 interface ProductEditModalProps {
   isOpen: boolean;
@@ -163,28 +164,29 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Single file upload for specific slot
-  const handleSingleFileUpload = (slotIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  // Single file upload for specific slot with automatic image compression
+  const handleSingleFileUpload = async (slotIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
+      try {
+        const compressed = await compressImageFile(file);
+        if (compressed) {
           const newImages = [...images];
           if (slotIndex < newImages.length) {
-            newImages[slotIndex] = reader.result;
+            newImages[slotIndex] = compressed;
           } else if (newImages.length < 5) {
-            newImages.push(reader.result);
+            newImages.push(compressed);
           }
           setImages(newImages);
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn('Image compression error:', err);
+      }
     }
   };
 
-  // Multiple files upload (up to 5 images)
-  const handleMultipleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Multiple files upload (up to 5 images) with automatic image compression
+  const handleMultipleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const maxAllowed = 5;
@@ -194,31 +196,24 @@ export const ProductEditModal: React.FC<ProductEditModalProps> = ({
       if (f) filesToRead.push(f);
     }
     
-    Promise.all(
-      filesToRead.map(
-        (file) =>
-          new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              if (typeof reader.result === 'string') resolve(reader.result);
-              else resolve('');
-            };
-            reader.readAsDataURL(file);
-          })
-      )
-    ).then((results) => {
+    try {
+      const results = await Promise.all(
+        filesToRead.map((file) => compressImageFile(file))
+      );
       const validResults = results.filter(Boolean);
       if (validResults.length > 0) {
         setImages(validResults.slice(0, 5));
         setActiveImageSlot(0);
         addToast(
           language === 'bn' 
-            ? `${validResults.length} টি ছবি সফলভাবে লোড করা হয়েছে` 
-            : `${validResults.length} images loaded successfully`, 
+            ? `${validResults.length} টি ছবি অপ্টিমাইজড করে লোড করা হয়েছে` 
+            : `${validResults.length} images optimized successfully`, 
           'success'
         );
       }
-    });
+    } catch (err) {
+      console.warn('Batch image compression error:', err);
+    }
   };
 
   // Add new image slot

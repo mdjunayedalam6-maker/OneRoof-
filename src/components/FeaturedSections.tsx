@@ -15,7 +15,7 @@ import { DualCategoryShowcase } from './DualCategoryShowcase';
 import { BRANDS } from '../data/mockData';
 
 export const FeaturedSections: React.FC = () => {
-  const { products, language, t, setCurrentPage, setFilterState, addToast } = useApp();
+  const { products, isProductsLoading, language, t, setCurrentPage, setFilterState, addToast } = useApp();
   const [activeTab, setActiveTab] = useState<'all' | 'electronics' | 'fashion' | 'grocery' | 'home'>('all');
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -96,11 +96,31 @@ export const FeaturedSections: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-          {filteredFeatured.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {isProductsLoading && products.length === 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-2xl p-3.5 border border-slate-200/80 animate-pulse space-y-3">
+                <div className="w-full pt-[100%] bg-slate-200 rounded-xl"></div>
+                <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                <div className="h-3 bg-slate-100 rounded w-1/2"></div>
+                <div className="flex justify-between items-center pt-2">
+                  <div className="h-5 bg-slate-200 rounded w-1/3"></div>
+                  <div className="h-7 bg-slate-200 rounded-xl w-1/3"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredFeatured.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+            {filteredFeatured.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-8 text-center border border-slate-200/80 text-slate-500 text-sm">
+            {language === 'bn' ? 'এই ক্যাটাগরিতে এখনো কোনো পণ্য নেই।' : 'No products in this category yet.'}
+          </div>
+        )}
       </section>
 
       {/* 2. Dynamic Auto-Rotating Category Showcase (Panjabi & Festive + Pure Food & Grocery) */}

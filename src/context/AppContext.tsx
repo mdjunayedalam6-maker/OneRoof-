@@ -45,6 +45,7 @@ import {
   SUPABASE_SETUP_SQL,
 } from '../lib/supabase';
 import { safeLocalStorage, safeSessionStorage } from '../utils/safeStorage';
+import { idbGet, idbSet } from '../utils/idbStorage';
 
 interface Toast {
   id: string;
@@ -148,6 +149,7 @@ interface AppContextType {
   syncAllToSupabase: () => Promise<boolean>;
   supabaseSetupSql: string;
   supabaseUrl: string;
+  isProductsLoading: boolean;
 }
 
 const defaultFilterState: FilterState = {
@@ -402,6 +404,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Supabase Connection & Sync State
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
   const [supabaseStatusMsg, setSupabaseStatusMsg] = useState<string>('কানেক্ট হচ্ছে...');
+  const [isProductsLoading, setIsProductsLoading] = useState<boolean>(() => products.length === 0);
 
   // Check Supabase Connection
   const checkSupabaseConnection = async (): Promise<boolean> => {
@@ -411,7 +414,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return res.success;
   };
 
-  // Initial Supabase Sync on mount
+  // Instant restoration from IndexedDB (ultra-fast 10-30ms offline cache)
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      idbGet<Product[]>('oneroof_cached_products'),
+      idbGet<Category[]>('oneroof_cached_categories'),
+      idbGet<AdminBannerSlide[]>('oneroof_cached_slides'),
+    ])
+      .then(([cachedProducts, cachedCategories, cachedSlides]) => {
+        if (!isMounted) return;
+        if (cachedProducts && Array.isArray(cachedProducts) && cachedProducts.length > 0) {
+          setProducts((prev) => (prev.length === 0 ? cachedProducts : prev));
+          setIsProductsLoading(false);
+        }
+        if (cachedCategories && Array.isArray(cachedCategories) && cachedCategories.length > 0) {
+          setCategories((prev) => (prev.length === 0 ? cachedCategories : prev));
+        }
+        if (cachedSlides && Array.isArray(cachedSlides) && cachedSlides.length > 0) {
+          setBannerSlides((prev) => (prev.length <= 5 ? cachedSlides : prev));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Initial Supabase Sync on mount - unblocked & parallel for lightning load speed
   useEffect(() => {
     let isMounted = true;
     let authUnsub: (() => void) | null = null;
@@ -419,13 +450,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const initSupabase = async () => {
       try {
-        const res = await testSupabaseConnection();
-        if (isMounted) {
-          setSupabaseConnected(res.success);
-          setSupabaseStatusMsg(res.message);
-        }
+        // Run test connection asynchronously without blocking resource downloads
+        testSupabaseConnection()
+          .then((res) => {
+            if (isMounted) {
+              setSupabaseConnected(res.success);
+              setSupabaseStatusMsg(res.message);
+            }
+          })
+          .catch(() => {});
 
-        // 1-6. Fetch all resources in parallel to speed up initial load
+        // Fetch products, categories, slides, orders immediately in parallel
         const [
           remoteProducts,
           remoteOrders,
@@ -443,12 +478,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ]);
 
         if (isMounted) {
-          if (remoteProducts && remoteProducts.length > 0) setProducts(remoteProducts);
+          if (remoteProducts && remoteProducts.length > 0) {
+            setProducts(remoteProducts);
+            idbSet('oneroof_cached_products', remoteProducts).catch(() => {});
+          }
           if (remoteOrders && remoteOrders.length > 0) setOrders(remoteOrders);
           if (remoteSettings) setSiteSettings(remoteSettings);
-          if (remoteCategories && remoteCategories.length > 0) setCategories(remoteCategories);
-          if (remoteSlides && remoteSlides.length > 0) setBannerSlides(remoteSlides);
+          if (remoteCategories && remoteCategories.length > 0) {
+            setCategories(remoteCategories);
+            idbSet('oneroof_cached_categories', remoteCategories).catch(() => {});
+          }
+          if (remoteSlides && remoteSlides.length > 0) {
+            setBannerSlides(remoteSlides);
+            idbSet('oneroof_cached_slides', remoteSlides).catch(() => {});
+          }
           if (remoteUsers && remoteUsers.length > 0) setUsers(remoteUsers);
+          setIsProductsLoading(false);
         }
 
         // Setup real auth listener with error safety
@@ -612,10 +657,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     safeLocalStorage.setItem('oneroof_products', JSON.stringify(products));
+    if (products.length > 0) {
+      idbSet('oneroof_cached_products', products).catch(() => {});
+    }
   }, [products]);
 
   useEffect(() => {
     safeLocalStorage.setItem('oneroof_categories', JSON.stringify(categories));
+    if (categories.length > 0) {
+      idbSet('oneroof_cached_categories', categories).catch(() => {});
+    }
   }, [categories]);
 
   useEffect(() => {
@@ -640,6 +691,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     safeLocalStorage.setItem('oneroof_banner_slides', JSON.stringify(bannerSlides));
+    if (bannerSlides.length > 0) {
+      idbSet('oneroof_cached_slides', bannerSlides).catch(() => {});
+    }
   }, [bannerSlides]);
 
   // Apply dynamic theme colors and layout style to :root across the entire website
@@ -1528,6 +1582,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         syncAllToSupabase,
         supabaseSetupSql: SUPABASE_SETUP_SQL,
         supabaseUrl: SUPABASE_URL,
+        isProductsLoading,
       }}
     >
       {children}
