@@ -48,6 +48,8 @@ export const POPULAR_SHOPBASE_CATEGORIES: ShopBaseCategoryItem[] = [
   { id: 31, name: 'লং স্লিভ সেট', nameEn: 'Long Sleeve Set', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1760424294.png', targetSlug: 'long-sleeve-set' },
   { id: 4, name: 'জিন্স প্যান্ট', nameEn: 'Jeans Pant', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173800.png', targetSlug: 'jeans-pant' },
   { id: 10, name: 'চিনো প্যান্ট', nameEn: 'Chino Pant', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173820.png', targetSlug: 'chino-pant' },
+  { id: 5473, name: 'মেয়েদের পোশাক', nameEn: 'Girls Clothing', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173900.png', targetSlug: 'girls-clothing' },
+  { id: 51, name: 'নতুন কালেকশন', nameEn: 'New Collection', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173900.png', targetSlug: 'products/5/1' },
   { id: 14, name: 'গার্লস টপস', nameEn: 'Girls Tops', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173900.png', targetSlug: 'girls-tops' },
   { id: 18, name: 'থ্রি পিস', nameEn: 'Three Piece', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173950.png', targetSlug: 'three-piece' },
   { id: 25, name: 'স্মার্ট ওয়াচ', nameEn: 'Smart Watch', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696174050.png', targetSlug: 'smart-watch' },
@@ -570,7 +572,11 @@ export async function fetchShopBaseSingleProduct(
   } else {
     // Extract PID from URL like https://shopbasebd.com/store/sample/product/details/32846
     const clean = identifier.trim();
-    const match = clean.match(/details\/(\d+)/i) || clean.match(/products\/(\d+)/i) || clean.match(/^(\d+)$/);
+    // More flexible regex to match common ShopBaseBD URL patterns
+    const match = clean.match(/details\/(\d+)/i) || 
+                  clean.match(/products\/(\d+)/i) || 
+                  clean.match(/product\/(\d+)/i) || 
+                  clean.match(/(\d+)$/);
     if (match) {
       pid = parseInt(match[1], 10);
     }
