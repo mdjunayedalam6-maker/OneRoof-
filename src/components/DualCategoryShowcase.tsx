@@ -183,8 +183,21 @@ const ShowcasePanel: React.FC<ShowcasePanelProps> = ({
         {/* Product Image Box */}
         <div className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-950">
           <img
-            src={currentProduct.images[0]}
+            src={
+              currentProduct.images[0]?.includes('_L_') && currentProduct.images[0].endsWith('.jpg')
+                ? currentProduct.images[0].replace(/\.jpg$/i, '.jpeg')
+                : currentProduct.images[0] || ''
+            }
             alt={title}
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (target.src.includes('_L_')) {
+                target.src = target.src.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+              } else {
+                target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
+              }
+            }}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         </div>
@@ -217,7 +230,7 @@ const ShowcasePanel: React.FC<ShowcasePanelProps> = ({
         <div className="flex items-center gap-1">
           {products.map((p, idx) => (
             <button
-              key={p.id}
+              key={`showcase-dot-${p.id}-${idx}`}
               onClick={() => goToProduct(idx)}
               className={`h-1 rounded-full transition-all duration-300 cursor-pointer ${
                 currentIndex === idx 

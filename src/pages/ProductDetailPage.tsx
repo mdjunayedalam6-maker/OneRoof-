@@ -140,14 +140,41 @@ export const ProductDetailPage: React.FC = () => {
 
   const isSaved = isInWishlist(selectedProduct.id);
   const title = language === 'bn' ? selectedProduct.titleBn : selectedProduct.titleEn;
-  const description = language === 'bn' ? selectedProduct.descriptionBn : selectedProduct.descriptionEn;
+
+  // Normalize and clean image list
+  const sanitizedImages = React.useMemo(() => {
+    if (!selectedProduct?.images || selectedProduct.images.length === 0) {
+      return ['https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80'];
+    }
+    return selectedProduct.images.map((img) => {
+      if (typeof img === 'string' && img.includes('shopbasebd.com') && img.includes('_L_') && img.endsWith('.jpg')) {
+        return img.replace(/\.jpg$/i, '.jpeg');
+      }
+      return img;
+    });
+  }, [selectedProduct?.images]);
+
+  const rawDescription = language === 'bn' ? selectedProduct.descriptionBn : selectedProduct.descriptionEn;
+  const description = React.useMemo(() => {
+    if (!rawDescription) return '';
+    const sensitiveTerms = [
+      'সোর্স', 'উৎস', 'পাইকারি রেট', 'হোলসেল রেট', 'আপনার লাভ', 'লাভ', 
+      'Wholesale Price', 'Profit'
+    ];
+    let cleaned = rawDescription;
+    sensitiveTerms.forEach(term => {
+      const regex = new RegExp(`${term}.*?(\\n|$)`, 'gi');
+      cleaned = cleaned.replace(regex, '');
+    });
+    return cleaned.trim();
+  }, [rawDescription, language]);
 
   const handleVariantSelect = (type: string, option: string) => {
     setSelectedVariants((prev) => ({ ...prev, [type]: option }));
   };
 
   const handleAddToCart = () => {
-    const chosenImage = selectedProduct.images?.[activeImageIndex] || selectedProduct.images?.[0] || '';
+    const chosenImage = sanitizedImages[activeImageIndex] || sanitizedImages[0] || '';
     const variantMap: Record<string, string> = { ...selectedVariants };
     if (selectedSize) variantMap['size'] = selectedSize;
     if (selectedColor) variantMap['color'] = selectedColor;
@@ -157,7 +184,7 @@ export const ProductDetailPage: React.FC = () => {
 
   const handleBuyNow = () => {
     clearCart();
-    const chosenImage = selectedProduct.images?.[activeImageIndex] || selectedProduct.images?.[0] || '';
+    const chosenImage = sanitizedImages[activeImageIndex] || sanitizedImages[0] || '';
     const variantMap: Record<string, string> = { ...selectedVariants };
     if (selectedSize) variantMap['size'] = selectedSize;
     if (selectedColor) variantMap['color'] = selectedColor;
@@ -228,9 +255,19 @@ export const ProductDetailPage: React.FC = () => {
         <div className="lg:col-span-5 flex flex-col gap-4">
           <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 group">
             <img
-              src={selectedProduct.images[activeImageIndex] || selectedProduct.images[0]}
+              src={sanitizedImages[activeImageIndex] || sanitizedImages[0]}
               alt={title}
-              onClick={() => setLightboxImage(selectedProduct.images[activeImageIndex] || selectedProduct.images[0])}
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.currentTarget;
+                const current = target.src;
+                if (current.includes('_L_')) {
+                  target.src = current.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+                  return;
+                }
+                target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
+              }}
+              onClick={() => setLightboxImage(sanitizedImages[activeImageIndex] || sanitizedImages[0])}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-zoom-in"
             />
             {selectedProduct.discountPercentage && (
@@ -247,9 +284,9 @@ export const ProductDetailPage: React.FC = () => {
           </div>
 
           {/* Thumbnails */}
-          {selectedProduct.images.length > 1 && (
+          {sanitizedImages.length > 1 && (
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              {selectedProduct.images.map((img, idx) => (
+              {sanitizedImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
@@ -259,7 +296,20 @@ export const ProductDetailPage: React.FC = () => {
                       : 'border-slate-200 hover:border-slate-300 opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt="Thumbnail" className="w-full h-full object-cover" />
+                  <img
+                    src={img}
+                    alt="Thumbnail"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (target.src.includes('_L_')) {
+                        target.src = target.src.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+                      } else {
+                        target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
+                      }
+                    }}
+                    className="w-full h-full object-cover"
+                  />
                 </button>
               ))}
             </div>
@@ -312,12 +362,6 @@ export const ProductDetailPage: React.FC = () => {
               {selectedProduct.originalPrice && (
                 <span className="text-sm text-slate-400 line-through">
                   {formatPrice(selectedProduct.originalPrice)}
-                </span>
-              )}
-              {selectedProduct.originalPrice && (
-                <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
-                  {language === 'bn' ? 'সাশ্রয় ' : 'Save '}
-                  {formatPrice(selectedProduct.originalPrice - selectedProduct.price)}
                 </span>
               )}
             </div>
@@ -571,7 +615,13 @@ export const ProductDetailPage: React.FC = () => {
         {activeTab === 'specs' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(selectedProduct.specifications).map(([key, value]) => (
+              {Object.entries(selectedProduct.specifications)
+                .filter(([key]) => {
+                  const k = key.toLowerCase();
+                  const forbidden = ['সোর্স', 'উৎস', 'পাইকারি', 'হোলসেল', 'লাভ', 'প্রফিট', 'দাম'];
+                  return !forbidden.some(term => k.includes(term));
+                })
+                .map(([key, value]) => (
                 <div key={key} className="flex justify-between p-3 bg-slate-50 rounded-xl text-xs sm:text-sm">
                   <span className="font-semibold text-slate-500">{key}</span>
                   <span className="font-bold text-slate-800 text-right">{value}</span>
@@ -749,8 +799,8 @@ export const ProductDetailPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
-            {relatedProducts.map((prod) => (
-              <ProductCard key={prod.id} product={prod} />
+            {relatedProducts.map((prod, idx) => (
+              <ProductCard key={`related-${prod.id}-${idx}`} product={prod} />
             ))}
           </div>
         </section>

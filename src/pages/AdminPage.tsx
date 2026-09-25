@@ -39,10 +39,13 @@ import { useApp } from '../context/AppContext';
 import { Product, Category, Order, OrderStatus, AdminBannerSlide } from '../types';
 import { ProductEditModal } from '../components/admin/ProductEditModal';
 import { OrderInvoiceModal } from '../components/admin/OrderInvoiceModal';
+import { ShopBaseImporter } from '../components/admin/ShopBaseImporter';
 
 export const AdminPage: React.FC = () => {
   const {
     products,
+    addProduct,
+    addMultipleProducts,
     deleteProduct,
     resetProductsToDefault,
     categories,
@@ -74,7 +77,7 @@ export const AdminPage: React.FC = () => {
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'orders' | 'products' | 'categories' | 'design' | 'banners' | 'security' | 'supabase'
+    'overview' | 'orders' | 'products' | 'categories' | 'design' | 'banners' | 'security' | 'supabase' | 'shopbase'
   >('overview');
 
   const [sqlCopied, setSqlCopied] = useState(false);
@@ -497,6 +500,7 @@ export const AdminPage: React.FC = () => {
               badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined 
             },
             { id: 'products', label: 'প্রডাক্ট আপলোড ও ম্যানেজমেন্ট', icon: ShoppingBag, count: products.length },
+            { id: 'shopbase', label: '🛍️ ShopBaseBD (১৫% লাভ)', icon: Sparkles, badge: 'অটো' },
             { id: 'categories', label: 'ক্যাটাগরি ম্যানেজমেন্ট', icon: Layers, count: categories.length },
             { id: 'design', label: 'কালার, থিম ও ডিজাইন', icon: Palette },
             { id: 'banners', label: 'ব্যানার স্লাইডার কন্ট্রোল', icon: ImageIcon },
@@ -964,6 +968,15 @@ export const AdminPage: React.FC = () => {
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={() => setActiveTab('shopbase')}
+                  className="px-3.5 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-orange-600/20 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-yellow-300" />
+                  <span>ShopBaseBD আপলোড (১৫% লাভ)</span>
+                </button>
+
+                <button
                   onClick={() => {
                     setProductToEdit(null);
                     setIsProductModalOpen(true);
@@ -991,6 +1004,31 @@ export const AdminPage: React.FC = () => {
               </div>
             </div>
 
+            {/* ShopBase Connector Promo Strip in Products Tab */}
+            <div className="bg-gradient-to-r from-orange-950/40 via-amber-950/30 to-slate-900 border border-orange-500/30 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-orange-600/30 border border-orange-500/50 flex items-center justify-center text-orange-400 shrink-0">
+                  <Sparkles className="w-5 h-5 text-yellow-400" />
+                </div>
+                <div>
+                  <h5 className="font-bold text-white text-xs">
+                    ShopBaseBD কানেক্টর সক্রিয় (১৫% লাভ মার্জিন)
+                  </h5>
+                  <p className="text-[11px] text-slate-300">
+                    shopbasebd.com থেকে ক্যাটাগরি বা লিংক দিয়ে পাইকারি রেটের পণ্যে ১৫% লাভ যোগ করে সরাসরি আপলোড করুন।
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('shopbase')}
+                className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-lg whitespace-nowrap shadow cursor-pointer self-start sm:self-auto flex items-center gap-1"
+              >
+                <span>ইমপোর্টার খুলুন</span>
+                <span>&rarr;</span>
+              </button>
+            </div>
+
             {/* Products Table */}
             <div className="bg-slate-800/80 rounded-2xl border border-slate-700/80 overflow-hidden">
               <div className="overflow-x-auto">
@@ -1006,18 +1044,49 @@ export const AdminPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/60">
-                    {filteredProducts.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-700/30 transition-colors">
+                    {filteredProducts.map((p, idx) => (
+                      <tr key={`admin-prod-${p.id}-${idx}`} className="hover:bg-slate-700/30 transition-colors">
                         <td className="py-3 px-4 flex items-center gap-3">
                           <img
-                            src={p.images[0]}
+                            src={
+                              p.images[0]?.includes('_L_') && p.images[0].endsWith('.jpg')
+                                ? p.images[0].replace(/\.jpg$/i, '.jpeg')
+                                : p.images[0] || ''
+                            }
                             alt={p.titleBn}
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              if (target.src.includes('_L_')) {
+                                target.src = target.src.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+                              } else {
+                                target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
+                              }
+                            }}
                             className="w-12 h-12 object-cover rounded-xl border border-slate-700 shrink-0"
                           />
                           <div className="min-w-0">
                             <div className="font-bold text-white text-sm line-clamp-1">{p.titleBn}</div>
                             <div className="text-[11px] text-slate-400 line-clamp-1">{p.titleEn}</div>
                             <div className="text-[10px] text-amber-400 font-medium">ব্র্যান্ড: {p.brand}</div>
+                            {p.sourceUrl && (
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <a
+                                  href={p.sourceUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-[10px] text-orange-400 hover:text-orange-300 font-bold bg-orange-950/50 border border-orange-800/60 px-1.5 py-0.2 rounded"
+                                >
+                                  <span>ShopBaseBD (পাইকারি: ৳ {p.wholesalePrice})</span>
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                </a>
+                                {p.profitMarginPercent && (
+                                  <span className="text-[10px] text-yellow-300 font-semibold">
+                                    +{p.profitMarginPercent}% লাভ
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="py-3 px-3 font-medium capitalize text-slate-300">{p.category}</td>
@@ -2273,6 +2342,16 @@ export const AdminPage: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* TAB 8: SHOPBASEBD AUTO IMPORTER (15% PROFIT) */}
+        {activeTab === 'shopbase' && (
+          <ShopBaseImporter
+            products={products}
+            addMultipleProducts={addMultipleProducts}
+            addProduct={addProduct}
+            formatPrice={formatPrice}
+          />
         )}
       </div>
 

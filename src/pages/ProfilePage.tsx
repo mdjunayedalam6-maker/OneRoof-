@@ -451,8 +451,21 @@ export const ProfilePage: React.FC = () => {
                         className="bg-white rounded-2xl p-4 border border-slate-200/80 flex items-center gap-4 hover:shadow-md transition-shadow"
                       >
                         <img
-                          src={prod.images[0]}
+                          src={
+                            prod.images[0]?.includes('_L_') && prod.images[0].endsWith('.jpg')
+                              ? prod.images[0].replace(/\.jpg$/i, '.jpeg')
+                              : prod.images[0] || ''
+                          }
                           alt={title}
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (target.src.includes('_L_')) {
+                              target.src = target.src.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+                            } else {
+                              target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
+                            }
+                          }}
                           className="w-16 h-16 object-cover rounded-xl border border-slate-200 shrink-0"
                         />
                         <div className="flex-1 min-w-0">

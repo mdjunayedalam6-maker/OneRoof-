@@ -19,6 +19,41 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
   const isSaved = isInWishlist(product.id);
   const title = language === 'bn' ? product.titleBn : product.titleEn;
 
+  // Robust image handling: normalize ShopBaseBD image extensions and provide fallback
+  const initialImage = React.useMemo(() => {
+    let img = product.images?.[0] || '';
+    if (typeof img === 'string' && img.includes('shopbasebd.com') && img.includes('_L_') && img.endsWith('.jpg')) {
+      img = img.replace(/\.jpg$/i, '.jpeg');
+    }
+    return img;
+  }, [product.images]);
+
+  const [currentImg, setCurrentImg] = React.useState<string>(initialImage);
+
+  React.useEffect(() => {
+    setCurrentImg(initialImage);
+  }, [initialImage]);
+
+  const handleImageError = () => {
+    // If large image failed, fallback to small thumbnail (_S_...jpg)
+    if (currentImg && currentImg.includes('_L_')) {
+      const fallbackSm = currentImg.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+      setCurrentImg(fallbackSm);
+      return;
+    }
+    // If that fails, try secondary image if available
+    if (product.images?.[1] && currentImg !== product.images[1]) {
+      let sec = product.images[1];
+      if (sec.includes('_L_') && sec.endsWith('.jpg')) {
+        sec = sec.replace(/\.jpg$/i, '.jpeg');
+      }
+      setCurrentImg(sec);
+      return;
+    }
+    // Default fallback placeholder
+    setCurrentImg('https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80');
+  };
+
   if (layout === 'list') {
     return (
       <div className="bg-white rounded-2xl p-4 border border-slate-200/80 hover:border-amber-500/60 hover:shadow-xl transition-all duration-300 flex flex-col sm:flex-row gap-4 items-center group">
@@ -27,9 +62,12 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
           className="relative w-full sm:w-48 h-48 sm:h-36 shrink-0 rounded-xl overflow-hidden bg-slate-100 cursor-pointer"
         >
           <img
-            src={product.images[0]}
+            src={currentImg}
             alt={title}
+            referrerPolicy="no-referrer"
+            onError={handleImageError}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
           />
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {product.discountPercentage && (
@@ -123,8 +161,10 @@ export const ProductCard: React.FC<{ product: Product; layout?: 'grid' | 'list' 
     >
       <div className="relative w-full pt-[100%] rounded-xl overflow-hidden bg-slate-100 mb-3">
         <img
-          src={product.images[0]}
+          src={currentImg}
           alt={title}
+          referrerPolicy="no-referrer"
+          onError={handleImageError}
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
           loading="lazy"
         />

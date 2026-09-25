@@ -460,8 +460,8 @@ export const ShopPage: React.FC = () => {
                   : 'space-y-3'
               }
             >
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} layout={layout} />
+              {filteredProducts.map((product, idx) => (
+                <ProductCard key={`shop-${product.id}-${idx}`} product={product} layout={layout} />
               ))}
             </div>
           ) : (

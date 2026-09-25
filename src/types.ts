@@ -125,6 +125,9 @@ export interface Product {
   shippingInside?: number;
   shippingOutside?: number;
   isFreeShipping?: boolean;
+  sourceUrl?: string;
+  wholesalePrice?: number;
+  profitMarginPercent?: number;
 }
 
 export interface CartItem {

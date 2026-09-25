@@ -121,8 +121,21 @@ export const CartPage: React.FC = () => {
                 <div key={item.product.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row items-center gap-4">
                   {/* Thumbnail */}
                   <img
-                    src={item.selectedImage || item.product.images[0]}
+                    src={
+                      (item.selectedImage || item.product.images[0])?.includes('_L_') && (item.selectedImage || item.product.images[0]).endsWith('.jpg')
+                        ? (item.selectedImage || item.product.images[0]).replace(/\.jpg$/i, '.jpeg')
+                        : item.selectedImage || item.product.images[0] || ''
+                    }
                     alt={title}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (target.src.includes('_L_')) {
+                        target.src = target.src.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+                      } else {
+                        target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
+                      }
+                    }}
                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl border border-slate-200 bg-slate-50 shrink-0"
                   />
 
@@ -382,8 +395,21 @@ export const CartDrawer: React.FC = () => {
               return (
                 <div key={item.product.id} className="py-3 flex items-center gap-3">
                   <img
-                    src={item.selectedImage || item.product.images[0]}
+                    src={
+                      (item.selectedImage || item.product.images[0])?.includes('_L_') && (item.selectedImage || item.product.images[0]).endsWith('.jpg')
+                        ? (item.selectedImage || item.product.images[0]).replace(/\.jpg$/i, '.jpeg')
+                        : item.selectedImage || item.product.images[0] || ''
+                    }
                     alt={title}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (target.src.includes('_L_')) {
+                        target.src = target.src.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+                      } else {
+                        target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
+                      }
+                    }}
                     className="w-16 h-16 object-cover rounded-xl border border-slate-200 shrink-0"
                   />
                   <div className="flex-1 min-w-0">

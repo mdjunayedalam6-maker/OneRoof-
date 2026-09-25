@@ -1,6 +1,67 @@
 import { Category, Product, Order, User } from '../types';
+import { SHOPBASE_ALL_PRODUCTS } from './shopbaseProducts';
 
 export const CATEGORIES: Category[] = [
+  {
+    id: 'polo-shirts',
+    nameBn: 'পলো শার্ট',
+    nameEn: 'Polo Shirts',
+    slug: 'polo-shirts',
+    iconName: 'Shirt',
+    image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1738393401.png',
+    itemCount: 8,
+    featured: true,
+  },
+  {
+    id: 'dropshoulder-tshirt',
+    nameBn: 'ড্রপসোল্ডার টিশার্ট',
+    nameEn: 'Drop Shoulder T-Shirts',
+    slug: 'dropshoulder-tshirt',
+    iconName: 'Shirt',
+    image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1769500397.png',
+    itemCount: 6,
+    featured: true,
+  },
+  {
+    id: 'katua',
+    nameBn: 'কাতুয়া',
+    nameEn: 'Katua Collection',
+    slug: 'katua',
+    iconName: 'Shirt',
+    image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1789034416.png',
+    itemCount: 6,
+    featured: true,
+  },
+  {
+    id: 'printed-shirt',
+    nameBn: 'প্রিন্ট শার্ট',
+    nameEn: 'Printed Shirts',
+    slug: 'printed-shirt',
+    iconName: 'Shirt',
+    image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696174388.png',
+    itemCount: 6,
+    featured: true,
+  },
+  {
+    id: 'embroidery-panjabi',
+    nameBn: 'পাঞ্জাবি',
+    nameEn: 'Panjabi Collection',
+    slug: 'embroidery-panjabi',
+    iconName: 'Shirt',
+    image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1738393868.png',
+    itemCount: 6,
+    featured: true,
+  },
+  {
+    id: 'basic-tshirt',
+    nameBn: 'বেসিক টিশার্ট',
+    nameEn: 'Basic T-Shirts',
+    slug: 'basic-tshirt',
+    iconName: 'Shirt',
+    image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1769500295.png',
+    itemCount: 6,
+    featured: true,
+  },
   {
     id: 'electronics',
     nameBn: 'ইলেকট্রনিক্স ও গ্যাজেট',
@@ -26,9 +87,14 @@ export const CATEGORIES: Category[] = [
     itemCount: 4,
     featured: true,
     subcategories: [
-      { id: 'punjabi', nameBn: 'পাঞ্জাবি', nameEn: 'Punjabi' },
-      { id: 'sari', nameBn: 'শাড়ি', nameEn: 'Sari' },
+      { id: 'polo', nameBn: 'পলো শার্ট', nameEn: 'Polo Shirt' },
       { id: 'tshirt', nameBn: 'টি-শার্ট', nameEn: 'T-Shirt' },
+      { id: 'dropshoulder', nameBn: 'ড্রপসোল্ডার টিশার্ট', nameEn: 'Drop Shoulder T-Shirt' },
+      { id: 'katua', nameBn: 'কাতুয়া', nameEn: 'Katua' },
+      { id: 'punjabi', nameBn: 'পাঞ্জাবি', nameEn: 'Punjabi' },
+      { id: 'shirt', nameBn: 'শার্ট', nameEn: 'Shirt' },
+      { id: 'combo', nameBn: 'কম্বো সেট', nameEn: 'Combo Set' },
+      { id: 'sari', nameBn: 'শাড়ি', nameEn: 'Sari' },
       { id: 'shoes', nameBn: 'জুতো', nameEn: 'Shoes' }
     ]
   },
@@ -95,6 +161,7 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const PRODUCTS: Product[] = [
+  ...SHOPBASE_ALL_PRODUCTS,
   {
     id: 'prod-1',
     titleBn: 'স্যামসাং গ্যালাক্সি A54 5G (8GB/128GB) অফিশিয়াল ওয়ারেন্টি',

@@ -556,8 +556,21 @@ export const CheckoutPage: React.FC = () => {
                 return (
                   <div key={item.product.id} className="pt-2 flex items-center gap-2.5">
                     <img
-                      src={item.selectedImage || item.product.images[0]}
+                      src={
+                        (item.selectedImage || item.product.images[0])?.includes('_L_') && (item.selectedImage || item.product.images[0]).endsWith('.jpg')
+                          ? (item.selectedImage || item.product.images[0]).replace(/\.jpg$/i, '.jpeg')
+                          : item.selectedImage || item.product.images[0] || ''
+                      }
                       alt={title}
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (target.src.includes('_L_')) {
+                          target.src = target.src.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+                        } else {
+                          target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
+                        }
+                      }}
                       className="w-11 h-11 object-cover rounded-lg border border-slate-200 shrink-0"
                     />
                     <div className="flex-1 min-w-0">

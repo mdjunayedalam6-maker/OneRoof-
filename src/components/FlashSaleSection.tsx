@@ -107,8 +107,8 @@ export const FlashSaleSection: React.FC = () => {
 
       {/* Flash Sale Product Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-        {flashSaleProducts.slice(0, 4).map((product) => (
-          <ProductCard key={product.id} product={product} />
+        {flashSaleProducts.slice(0, 4).map((product, idx) => (
+          <ProductCard key={`flash-${product.id}-${idx}`} product={product} />
         ))}
       </div>
 

@@ -46,6 +46,7 @@ import {
 } from '../lib/supabase';
 import { safeLocalStorage, safeSessionStorage } from '../utils/safeStorage';
 import { idbGet, idbSet } from '../utils/idbStorage';
+import { getShopBaseCategoryMetadata } from '../services/shopbaseService';
 
 interface Toast {
   id: string;
@@ -121,10 +122,18 @@ interface AppContextType {
   addBannerSlide: (slide: AdminBannerSlide) => void;
   deleteBannerSlide: (id: string) => void;
   addProduct: (product: Product) => void;
+  addMultipleProducts: (products: Product[]) => void;
   updateProduct: (id: string, updated: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   resetProductsToDefault: () => void;
   addCategory: (category: Category) => void;
+  ensureCategoryExists: (
+    categorySlug: string,
+    nameBn?: string,
+    nameEn?: string,
+    image?: string,
+    iconName?: string
+  ) => Category;
   updateCategory: (id: string, updated: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
   resetCategoriesToDefault: () => void;
@@ -188,6 +197,34 @@ export const isUserAdmin = (user?: User | null): boolean => {
   return user.role === 'admin';
 };
 
+export const deduplicateProducts = (list: Product[]): Product[] => {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set<string>();
+  const result: Product[] = [];
+  for (const rawItem of list) {
+    if (rawItem && rawItem.id) {
+      if (!seen.has(rawItem.id)) {
+        seen.add(rawItem.id);
+        let item = rawItem;
+        if (Array.isArray(rawItem.images) && rawItem.images.length > 0) {
+          const sanitizedImages = rawItem.images.map((img) => {
+            if (typeof img === 'string' && img.includes('shopbasebd.com')) {
+              // Convert erroneous _L_*.jpg to _L_*.jpeg (ShopBaseBD uses .jpeg for large images)
+              if (img.includes('_L_') && img.endsWith('.jpg')) {
+                return img.replace(/\.jpg$/i, '.jpeg');
+              }
+            }
+            return img;
+          });
+          item = { ...rawItem, images: sanitizedImages };
+        }
+        result.push(item);
+      }
+    }
+  }
+  return result;
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -204,13 +241,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const saved = safeLocalStorage.getItem('oneroof_products');
       if (saved) {
         const parsed: Product[] = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const cleanParsed = deduplicateProducts(parsed);
+          const existingIds = new Set(cleanParsed.map((p) => p.id));
+          const missingShopBase = INITIAL_PRODUCTS.filter((p) => !existingIds.has(p.id));
+          const merged = deduplicateProducts([...missingShopBase, ...cleanParsed]);
+          safeLocalStorage.setItem('oneroof_products', JSON.stringify(merged));
+          return merged;
         }
       }
-      return [];
+      const initialClean = deduplicateProducts(INITIAL_PRODUCTS);
+      safeLocalStorage.setItem('oneroof_products', JSON.stringify(initialClean));
+      return initialClean;
     } catch {
-      return [];
+      return deduplicateProducts(INITIAL_PRODUCTS);
     }
   });
 
@@ -218,7 +262,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [categories, setCategories] = useState<Category[]>(() => {
     try {
       const saved = safeLocalStorage.getItem('oneroof_categories');
-      return saved ? JSON.parse(saved) : CATEGORIES;
+      if (saved) {
+        const parsed: Category[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const existingIds = new Set(parsed.map((c) => (c.id || '').trim().toLowerCase()));
+          const missingDefaults = CATEGORIES.filter(
+            (c) => !existingIds.has((c.id || '').trim().toLowerCase())
+          );
+          if (missingDefaults.length > 0) {
+            const merged = [...parsed, ...missingDefaults];
+            safeLocalStorage.setItem('oneroof_categories', JSON.stringify(merged));
+            return merged;
+          }
+          return parsed;
+        }
+      }
+      safeLocalStorage.setItem('oneroof_categories', JSON.stringify(CATEGORIES));
+      return CATEGORIES;
     } catch {
       return CATEGORIES;
     }
@@ -229,17 +289,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return categories.map((cat) => {
       const catId = (cat.id || '').trim().toLowerCase();
       const catSlug = (cat.slug || '').trim().toLowerCase();
+      const catBn = (cat.nameBn || '').trim().toLowerCase();
       const count = products.filter((p) => {
-        if (!p.category) return false;
-        const pCat = p.category.trim().toLowerCase();
-        return pCat === catId || pCat === catSlug;
+        if (!p.category && !p.subcategory) return false;
+        const pCat = (p.category || '').trim().toLowerCase();
+        const pSub = (p.subcategory || '').trim().toLowerCase();
+        return pCat === catId || pCat === catSlug || (pSub && pSub === catBn);
       }).length;
 
       return {
         ...cat,
         itemCount: count,
       };
-    });
+    }).filter(cat => cat.itemCount > 0);
   }, [categories, products]);
 
   // Persistent Site Settings
@@ -425,7 +487,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .then(([cachedProducts, cachedCategories, cachedSlides]) => {
         if (!isMounted) return;
         if (cachedProducts && Array.isArray(cachedProducts) && cachedProducts.length > 0) {
-          setProducts((prev) => (prev.length === 0 ? cachedProducts : prev));
+          setProducts((prev) => {
+            const cleanCached = deduplicateProducts(cachedProducts);
+            const base = prev.length === 0 ? cleanCached : prev;
+            return deduplicateProducts([...base, ...cleanCached]);
+          });
           setIsProductsLoading(false);
         }
         if (cachedCategories && Array.isArray(cachedCategories) && cachedCategories.length > 0) {
@@ -479,8 +545,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (isMounted) {
           if (remoteProducts && remoteProducts.length > 0) {
-            setProducts(remoteProducts);
-            idbSet('oneroof_cached_products', remoteProducts).catch(() => {});
+            const cleanRemote = deduplicateProducts(remoteProducts);
+            setProducts((prev) => deduplicateProducts([...cleanRemote, ...prev]));
+            idbSet('oneroof_cached_products', cleanRemote).catch(() => {});
           }
           if (remoteOrders && remoteOrders.length > 0) setOrders(remoteOrders);
           if (remoteSettings) setSiteSettings(remoteSettings);
@@ -821,14 +888,136 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addToast(language === 'bn' ? 'এডমিন প্যানেল থেকে প্রস্থান করা হয়েছে' : 'Logged out from Admin', 'info');
   };
 
+  // Category Admin Operations & Auto-Creation Helper
+  const ensureCategoryExists = (
+    categorySlug: string,
+    nameBn?: string,
+    nameEn?: string,
+    image?: string,
+    iconName?: string
+  ): Category => {
+    const cleanSlug = (categorySlug || '').trim().toLowerCase();
+    const cleanBn = (nameBn || '').trim().toLowerCase();
+    const cleanEn = (nameEn || '').trim().toLowerCase();
+
+    // 1. Check if category already exists in current categories
+    const existing = categories.find((c) => {
+      const cId = (c.id || '').trim().toLowerCase();
+      const cSlug = (c.slug || '').trim().toLowerCase();
+      const cBn = (c.nameBn || '').trim().toLowerCase();
+      const cEn = (c.nameEn || '').trim().toLowerCase();
+      return (
+        (cleanSlug && (cId === cleanSlug || cSlug === cleanSlug)) ||
+        (cleanBn && cBn === cleanBn) ||
+        (cleanEn && cEn === cleanEn)
+      );
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    // 2. Derive metadata for the missing category
+    const meta = getShopBaseCategoryMetadata(categorySlug || nameBn || '');
+    const finalSlug = cleanSlug || meta.slug;
+    const finalNameBn = nameBn || meta.nameBn;
+    const finalNameEn = nameEn || meta.nameEn;
+    const finalIcon = iconName || meta.iconName || 'Shirt';
+    const finalImage =
+      image ||
+      meta.image ||
+      'https://shopbasebd.com/public/uploads/shop/category/scategory-1738393401.png';
+
+    const newCategory: Category = {
+      id: finalSlug,
+      slug: finalSlug,
+      nameBn: finalNameBn,
+      nameEn: finalNameEn,
+      iconName: finalIcon,
+      image: finalImage,
+      itemCount: 1,
+      featured: true,
+    };
+
+    setCategories((prev) => {
+      const alreadyPresent = prev.some(
+        (c) =>
+          c.id.toLowerCase() === finalSlug.toLowerCase() ||
+          c.slug.toLowerCase() === finalSlug.toLowerCase() ||
+          c.nameBn.trim().toLowerCase() === finalNameBn.trim().toLowerCase()
+      );
+      if (alreadyPresent) return prev;
+      const updated = [...prev, newCategory];
+      safeLocalStorage.setItem('oneroof_categories', JSON.stringify(updated));
+      idbSet('oneroof_cached_categories', updated).catch(() => {});
+      syncCategoriesToSupabase(updated).catch(() => {});
+      return updated;
+    });
+
+    addToast(
+      language === 'bn'
+        ? `নতুন ক্যাটাগরি "${finalNameBn}" স্বয়ংক্রিয়ভাবে ওয়েবসাইটে যুক্ত হয়েছে!`
+        : `New category "${finalNameEn}" automatically created!`,
+      'success'
+    );
+
+    return newCategory;
+  };
+
   // Product Admin Operations
   const addProduct = (newProduct: Product) => {
-    setProducts((prev) => [newProduct, ...prev]);
+    // Automatically ensure the product's category exists on the website
+    if (newProduct.category) {
+      ensureCategoryExists(
+        newProduct.category,
+        newProduct.subcategory,
+        undefined,
+        newProduct.images?.[0]
+      );
+    }
+    setProducts((prev) => {
+      const filtered = prev.filter((p) => p.id !== newProduct.id);
+      return [newProduct, ...filtered];
+    });
     syncProductToSupabase(newProduct);
     addToast(
       language === 'bn' 
         ? `"${newProduct.titleBn}" প্রডাক্ট সফলভাবে যুক্ত হয়েছে!` 
         : `Product "${newProduct.titleEn}" added successfully!`,
+      'success'
+    );
+  };
+
+  const addMultipleProducts = (newProducts: Product[]) => {
+    if (!newProducts || newProducts.length === 0) return;
+
+    // Automatically ensure all categories exist on the website
+    const categoriesProcessed = new Set<string>();
+    for (const p of newProducts) {
+      if (p.category && !categoriesProcessed.has(p.category)) {
+        categoriesProcessed.add(p.category);
+        ensureCategoryExists(
+          p.category,
+          p.subcategory,
+          undefined,
+          p.images?.[0]
+        );
+      }
+    }
+
+    setProducts((prev) => {
+      const incomingClean = deduplicateProducts(newProducts);
+      const incomingIds = new Set(incomingClean.map((p) => p.id));
+      const filteredExisting = prev.filter((p) => !incomingIds.has(p.id));
+      return [...incomingClean, ...filteredExisting];
+    });
+    for (const p of newProducts) {
+      syncProductToSupabase(p).catch(() => {});
+    }
+    addToast(
+      language === 'bn' 
+        ? `${newProducts.length}টি প্রোডাক্ট সফলভাবে যুক্ত করা হয়েছে!` 
+        : `${newProducts.length} products imported successfully!`,
       'success'
     );
   };
@@ -852,9 +1041,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetProductsToDefault = () => {
-    setProducts(INITIAL_PRODUCTS);
-    safeLocalStorage.setItem('oneroof_products', JSON.stringify(INITIAL_PRODUCTS));
-    INITIAL_PRODUCTS.forEach((p) => syncProductToSupabase(p));
+    const cleanDefault = deduplicateProducts(INITIAL_PRODUCTS);
+    setProducts(cleanDefault);
+    safeLocalStorage.setItem('oneroof_products', JSON.stringify(cleanDefault));
+    idbSet('oneroof_cached_products', cleanDefault).catch(() => {});
+    cleanDefault.forEach((p) => syncProductToSupabase(p));
     addToast(language === 'bn' ? 'ডিফল্ট প্রডাক্টগুলো রিস্টোর করা হয়েছে' : 'Default products restored', 'info');
   };
 
@@ -1556,10 +1747,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateBannerSlide,
         deleteBannerSlide,
         addProduct,
+        addMultipleProducts,
         updateProduct,
         deleteProduct,
         resetProductsToDefault,
         addCategory,
+        ensureCategoryExists,
         updateCategory,
         deleteCategory,
         resetCategoriesToDefault,
