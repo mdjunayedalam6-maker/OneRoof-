@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Product, Order, Category, SiteSettings, AdminBannerSlide, User } from '../types';
+import { safeLocalStorage } from '../utils/safeStorage';
 
 const getEnvVar = (key: string, fallback: string): string => {
   try {
@@ -25,10 +26,19 @@ export const SUPABASE_ANON_KEY = getEnvVar(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwd2Fvc2ptYmR5b2NybWhud2FrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0OTExOTgsImV4cCI6MjEwNjA2NzE5OH0.8zZnNTMhFZnUWXfkKwUzV07pgGOEnQSCKn7xg5GHLN4'
 ).trim();
 
+// Custom storage adapter ensuring iframe and mobile compatibility without throwing SecurityError
+const safeSupabaseStorage = {
+  getItem: (key: string): string | null => safeLocalStorage.getItem(key),
+  setItem: (key: string, value: string): void => safeLocalStorage.setItem(key, value),
+  removeItem: (key: string): void => safeLocalStorage.removeItem(key),
+};
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
+    storage: safeSupabaseStorage,
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: false,
   },
 });
 

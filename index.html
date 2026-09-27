@@ -5,87 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
     <script>
-      // Gracefully prevent unhandled errors/rejections/WebSocket issues in iframe preview
+      // Gracefully prevent unhandled WebSocket/iframe preview network noise
       (function() {
-        function isIgnorable(err, e) {
-          if (!err && !e) return true;
+        var ignorableKeywords = [
+          "reading 'send'",
+          "reading 'addEventListener'",
+          "WebSocket",
+          "failed to connect",
+          "NetworkError",
+          "Load failed",
+          "ServiceWorker",
+          "sandbox flags",
+          "SecurityError",
+          "before connect"
+        ];
 
-          // If ErrorEvent or PromiseRejectionEvent has no message/error/reason
-          if (e && typeof e === 'object') {
-            if (!e.message && !e.error && !e.reason) {
-              return true;
-            }
-          }
-
-          var msg = '';
-          if (typeof err === 'string') {
-            msg = err;
-          } else if (err && typeof err === 'object') {
-            msg = String(err.message || err.reason || (err.error && err.error.message) || '');
-            if (!msg && err.error) {
-              msg = String(err.error);
-            }
-          }
-
-          msg = (msg || '').trim();
-          if (!msg || msg === 'undefined' || msg === 'null' || msg === 'Script error.' || msg.indexOf('[object ') === 0) {
-            return true;
-          }
-
-          var ignorableKeywords = [
-            "reading 'send'",
-            "reading 'addEventListener'",
-            "WebSocket",
-            "failed to connect",
-            "Failed to fetch",
-            "NetworkError",
-            "Load failed",
-            "cancelled",
-            "ServiceWorker",
-            "sandbox flags",
-            "SecurityError",
-            "before connect"
-          ];
+        function isIgnorable(err) {
+          if (!err) return false;
+          var msg = String(err.message || err.reason || err || '');
           for (var i = 0; i < ignorableKeywords.length; i++) {
             if (msg.indexOf(ignorableKeywords[i]) !== -1) return true;
           }
           return false;
         }
 
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
-          if (isIgnorable(msg || (error && error.message) || error)) {
-            return true;
-          }
-          return false;
-        };
-
-        window.onunhandledrejection = function(event) {
-          var reason = event ? (event.reason || event) : null;
-          if (isIgnorable(reason, event)) {
-            if (event && event.preventDefault) event.preventDefault();
-            if (event && event.stopImmediatePropagation) event.stopImmediatePropagation();
-            if (event && event.stopPropagation) event.stopPropagation();
-            return true;
-          }
-        };
-
         window.addEventListener('unhandledrejection', function(e) {
-          var reason = e ? (e.reason || e) : null;
-          if (isIgnorable(reason, e)) {
+          if (isIgnorable(e.reason)) {
             if (e.preventDefault) e.preventDefault();
-            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-            if (e.stopPropagation) e.stopPropagation();
           }
-        }, true);
+        });
 
-        window.addEventListener('error', function(e) {
-          var target = e ? (e.message || e.error || e) : null;
-          if (isIgnorable(target, e)) {
-            if (e.preventDefault) e.preventDefault();
-            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-            if (e.stopPropagation) e.stopPropagation();
-          }
-        }, true);
+        // Proactively unregister any stale service workers in dev/preview iframe to prevent white screen
+        if ('serviceWorker' in navigator) {
+          try {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              for (var i = 0; i < regs.length; i++) {
+                regs[i].unregister();
+              }
+            }).catch(function() {});
+            if (typeof caches !== 'undefined' && caches && caches.keys) {
+              caches.keys().then(function(keys) {
+                for (var i = 0; i < keys.length; i++) {
+                  if (keys[i].indexOf('oneroof-pwa') !== -1) {
+                    caches.delete(keys[i]);
+                  }
+                }
+              }).catch(function() {});
+            }
+          } catch (_) {}
+        }
       })();
     </script>
     <title>OneRoof Mart - এক ছাদের নিচে সবকিছু | Premium Online Marketplace</title>
@@ -107,26 +75,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+    <style>
+      @keyframes oneroof-pulse-bar {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(50%); }
+        100% { transform: translateX(200%); }
+      }
+    </style>
   </head>
   <body class="bg-[#F8FAFC] text-slate-800 antialiased selection:bg-emerald-600 selection:text-white">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Branded Initial Preloader: ensures user never sees a blank white screen -->
+      <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #F8FAFC; font-family: 'Hind Siliguri', -apple-system, sans-serif; padding: 20px;">
+        <div style="width: 64px; height: 64px; border-radius: 18px; background: linear-gradient(135deg, #003882 0%, #002255 100%); display: flex; align-items: center; justify-content: center; margin-bottom: 18px; box-shadow: 0 10px 25px rgba(0, 56, 130, 0.25);">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <div style="font-size: 20px; font-weight: 800; color: #003882; margin-bottom: 4px; letter-spacing: -0.3px;">OneRoof Mart</div>
+        <div style="font-size: 13px; color: #64748B; margin-bottom: 22px; font-weight: 500;">এক ছাদের নিচে সবকিছু • লোড হচ্ছে...</div>
+        <div style="width: 160px; height: 4px; background-color: #E2E8F0; border-radius: 9999px; overflow: hidden; position: relative;">
+          <div style="width: 45%; height: 100%; background: linear-gradient(90deg, #003882, #FF6B00); border-radius: 9999px; animation: oneroof-pulse-bar 1.4s infinite ease-in-out;"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Only register service worker when not in an iframe and on secure/supported context
-      if ('serviceWorker' in navigator && window.self === window.top && window.location.protocol === 'https:') {
-        window.addEventListener('load', function() {
-          try {
-            navigator.serviceWorker.register('/sw.js').then(function(reg) {
-              console.log('OneRoof SW registered successfully:', reg.scope);
-            }).catch(function(err) {
-              console.warn('OneRoof SW registration notice:', err);
-            });
-          } catch (err) {
-            console.warn('OneRoof SW registration notice:', err);
-          }
-        });
-      }
-    </script>
   </body>
 </html>
 

@@ -300,9 +300,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return {
         ...cat,
-        itemCount: count,
+        itemCount: count > 0 ? count : (cat.itemCount || 10),
       };
-    }).filter(cat => cat.itemCount > 0);
+    });
   }, [categories, products]);
 
   // Persistent Site Settings
@@ -553,8 +553,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (remoteOrders && remoteOrders.length > 0) setOrders(remoteOrders);
           if (remoteSettings) setSiteSettings(remoteSettings);
           if (remoteCategories && remoteCategories.length > 0) {
-            setCategories(remoteCategories);
-            idbSet('oneroof_cached_categories', remoteCategories).catch(() => {});
+            setCategories((prev) => {
+              const remoteIds = new Set(remoteCategories.map((c) => (c.id || '').trim().toLowerCase()));
+              const missingDefaults = prev.filter((c) => !remoteIds.has((c.id || '').trim().toLowerCase()));
+              const merged = [...remoteCategories, ...missingDefaults];
+              idbSet('oneroof_cached_categories', merged).catch(() => {});
+              return merged;
+            });
           }
           if (remoteSlides && remoteSlides.length > 0) {
             setBannerSlides(remoteSlides);
@@ -621,6 +626,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         
         // Setup real-time listeners for live sync across devices with graceful error handling
         try {
+          try {
+            const existingChannels = supabase.getChannels();
+            const stale = existingChannels.find((c: any) => c.topic === 'realtime:oneroof-realtime');
+            if (stale) supabase.removeChannel(stale);
+          } catch (_) {}
+
           const channel = supabase
             .channel('oneroof-realtime')
             .on(
@@ -639,12 +650,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   setOrders((prev) => prev.filter((o) => o.id !== deletedId));
                 }
               }
-            )
-            .subscribe((status) => {
-              if (status === 'CHANNEL_ERROR') {
-                // Ignore WebSocket channel errors silently
-              }
-            });
+            );
+
+          channel.subscribe((status) => {
+            if (status === 'CHANNEL_ERROR') {
+              // Ignore WebSocket channel errors silently
+            }
+          });
 
           channelObj = channel;
         } catch (rtErr) {

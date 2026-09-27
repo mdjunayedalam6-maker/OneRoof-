@@ -557,9 +557,9 @@ export const CheckoutPage: React.FC = () => {
                   <div key={item.product.id} className="pt-2 flex items-center gap-2.5">
                     <img
                       src={
-                        (item.selectedImage || item.product.images[0])?.includes('_L_') && (item.selectedImage || item.product.images[0]).endsWith('.jpg')
-                          ? (item.selectedImage || item.product.images[0]).replace(/\.jpg$/i, '.jpeg')
-                          : item.selectedImage || item.product.images[0] || ''
+                        (item.selectedImage || item.product?.images?.[0])?.includes('_L_') && (item.selectedImage || item.product?.images?.[0]).endsWith('.jpg')
+                          ? (item.selectedImage || item.product?.images?.[0]).replace(/\.jpg$/i, '.jpeg')
+                          : item.selectedImage || item.product?.images?.[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80'
                       }
                       alt={title}
                       referrerPolicy="no-referrer"

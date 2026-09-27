@@ -184,9 +184,9 @@ const ShowcasePanel: React.FC<ShowcasePanelProps> = ({
         <div className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-950">
           <img
             src={
-              currentProduct.images[0]?.includes('_L_') && currentProduct.images[0].endsWith('.jpg')
+              currentProduct?.images?.[0]?.includes('_L_') && currentProduct.images[0].endsWith('.jpg')
                 ? currentProduct.images[0].replace(/\.jpg$/i, '.jpeg')
-                : currentProduct.images[0] || ''
+                : currentProduct?.images?.[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80'
             }
             alt={title}
             referrerPolicy="no-referrer"

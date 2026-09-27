@@ -73,9 +73,11 @@ export const ShopPage: React.FC = () => {
       // Search query
       if (filterState.searchQuery.trim()) {
         const q = filterState.searchQuery.toLowerCase();
-        const titleMatch = (language === 'bn' ? p.titleBn : p.titleEn).toLowerCase().includes(q);
-        const brandMatch = p.brand.toLowerCase().includes(q);
-        const tagMatch = p.tags.some((t) => t.toLowerCase().includes(q));
+        const titleBn = p.titleBn || '';
+        const titleEn = p.titleEn || '';
+        const titleMatch = (language === 'bn' ? titleBn : titleEn).toLowerCase().includes(q);
+        const brandMatch = typeof p.brand === 'string' && p.brand.toLowerCase().includes(q);
+        const tagMatch = Array.isArray(p.tags) && p.tags.some((t) => typeof t === 'string' && t.toLowerCase().includes(q));
         if (!titleMatch && !brandMatch && !tagMatch) {
           return false;
         }

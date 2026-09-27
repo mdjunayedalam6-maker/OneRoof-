@@ -51,11 +51,13 @@ export const Header: React.FC = () => {
   // Filter auto-suggestions
   const suggestions = searchInput.trim().length > 1
     ? products.filter((p) => {
-        const titleMatch = (language === 'bn' ? p.titleBn : p.titleEn)
+        const titleBn = p.titleBn || '';
+        const titleEn = p.titleEn || '';
+        const titleMatch = (language === 'bn' ? titleBn : titleEn)
           .toLowerCase()
           .includes(searchInput.toLowerCase());
-        const tagMatch = p.tags.some((tag) => tag.toLowerCase().includes(searchInput.toLowerCase()));
-        const brandMatch = p.brand.toLowerCase().includes(searchInput.toLowerCase());
+        const tagMatch = Array.isArray(p.tags) && p.tags.some((tag) => typeof tag === 'string' && tag.toLowerCase().includes(searchInput.toLowerCase()));
+        const brandMatch = typeof p.brand === 'string' && p.brand.toLowerCase().includes(searchInput.toLowerCase());
         const catMatch = selectedSearchCat === 'all' || p.category === selectedSearchCat;
         return (titleMatch || tagMatch || brandMatch) && catMatch;
       }).slice(0, 5)
@@ -306,11 +308,11 @@ export const Header: React.FC = () => {
                     >
                       <img
                         src={
-                          prod.images[0]?.includes('_L_') && prod.images[0].endsWith('.jpg')
+                          prod?.images?.[0]?.includes('_L_') && prod.images[0].endsWith('.jpg')
                             ? prod.images[0].replace(/\.jpg$/i, '.jpeg')
-                            : prod.images[0] || ''
+                            : prod?.images?.[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80'
                         }
-                        alt={prod.titleBn}
+                        alt={prod.titleBn || ''}
                         referrerPolicy="no-referrer"
                         onError={(e) => {
                           const target = e.currentTarget;

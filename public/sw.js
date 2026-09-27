@@ -33,16 +33,43 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Strategy: Stale-While-Revalidate for static assets, Network-First for dynamic
+// Fetch Strategy: Network-First for navigation / HTML, Cache-First only for precached static images
 self.addEventListener('fetch', (event) => {
   // Only handle GET requests and http/https
   if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
     return;
   }
 
-  // Bypass API / Supabase requests from service worker cache to ensure fresh data
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api') || url.hostname.includes('supabase.co')) {
+  // Bypass API, Supabase, and Vite dev modules from service worker cache
+  if (
+    url.pathname.startsWith('/api') || 
+    url.pathname.startsWith('/@vite') ||
+    url.pathname.startsWith('/src') ||
+    url.pathname.startsWith('/node_modules') ||
+    url.hostname.includes('supabase.co') ||
+    url.port === '3000'
+  ) {
+    return;
+  }
+
+  // Network-first strategy for page navigations to always show latest app version
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match('/') || caches.match('/index.html');
+        })
+    );
     return;
   }
 
@@ -58,13 +85,7 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => {
-          // If offline and request is for navigation/page, return cached root/index.html
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-          return cachedResponse;
-        });
+        .catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })
