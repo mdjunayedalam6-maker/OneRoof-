@@ -352,7 +352,7 @@ export const BannerSlider: React.FC = () => {
                 onClick={() => handleCopyCoupon(activeSlide.coupon)}
                 className="mt-1 flex items-center gap-1.5 bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-amber-300 px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer"
               >
-                <span>{activeSlide.coupon || 'ONEROOF'}</span>
+                <span>{activeSlide.coupon || 'ONEROOFMART10'}</span>
                 {copiedCoupon === activeSlide.coupon ? (
                   <Check className="w-3.5 h-3.5 text-emerald-400" />
                 ) : (

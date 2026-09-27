@@ -39,6 +39,7 @@ import {
   deleteBannerSlideFromSupabase,
   fetchBannerSlidesFromSupabase,
   syncUserToSupabase,
+  syncProductsBatchToSupabase,
   fetchUsersFromSupabase,
   supabase,
   SUPABASE_URL,
@@ -675,8 +676,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await syncSiteSettingsToSupabase(siteSettings);
       await syncCategoriesToSupabase(categories);
       await syncBannerSlidesToSupabase(bannerSlides);
-      for (const p of products) {
-        await syncProductToSupabase(p);
+      if (products.length > 0) {
+        await syncProductsBatchToSupabase(products);
       }
       for (const o of orders) {
         await syncOrderToSupabase(o);
@@ -1285,9 +1286,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const applyCoupon = (code: string): { success: boolean; message: string } => {
     const trimmed = code.trim().toUpperCase();
-    if (trimmed === 'ONEROOF10') {
+    if (trimmed === 'ONEROOF10' || trimmed === 'ONEROOFMART10') {
       const coupon: Coupon = {
-        code: 'ONEROOF10',
+        code: trimmed,
         discountPercent: 10,
         minSpend: 1000,
         description: language === 'bn' ? '10% ফ্ল্যাট ডিসকাউন্ট' : '10% Flat Discount',
@@ -1312,7 +1313,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } else {
       return { 
         success: false, 
-        message: language === 'bn' ? 'ভুল কুপন কোড! "ONEROOF10" বা "EID500" ট্রাই করুন' : 'Invalid promo code! Try "ONEROOF10" or "EID500"' 
+        message: language === 'bn' ? 'ভুল কুপন কোড! "ONEROOFMART10" বা "EID500" ট্রাই করুন' : 'Invalid promo code! Try "ONEROOFMART10" or "EID500"' 
       };
     }
   };

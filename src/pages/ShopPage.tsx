@@ -461,7 +461,7 @@ export const ShopPage: React.FC = () => {
               }
             >
               {filteredProducts.map((product, idx) => (
-                <ProductCard key={`shop-${product.id}-${idx}`} product={product} layout={layout} />
+                <ProductCard key={product.id} product={product} layout={layout} />
               ))}
             </div>
           ) : (

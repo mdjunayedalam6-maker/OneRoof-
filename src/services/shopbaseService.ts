@@ -29,8 +29,27 @@ export interface ShopBaseProductDetail {
   sourceUrl: string;
 }
 
-// Default popular categories from shopbasebd.com
+// Default popular categories from shopbasebd.com (verified matching live API catalog)
 export const POPULAR_SHOPBASE_CATEGORIES: ShopBaseCategoryItem[] = [
+  { id: 93, name: 'ওয়ার্ল্ড কাপ', nameEn: 'World Cup Collection', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1779218008.png', targetSlug: 'world-cup' },
+  { id: 38, name: 'বোরকা', nameEn: 'Borka & Abaya', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696260414.png', targetSlug: 'borka-abaya' },
+  { id: 64, name: 'তাঁতের শাড়ী', nameEn: 'Tanter Saree', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1738399069.png', targetSlug: 'tanter-saree' },
+  { id: 66, name: 'হ্যান্ডপ্রিন্ট শাড়ি', nameEn: 'Handprint Saree', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1738402885.png', targetSlug: 'handprint-saree' },
+  { id: 4, name: 'শাড়ি', nameEn: 'Saree', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1691436424.png', targetSlug: 'saree' },
+  { id: 49, name: 'জিন্স প্যান্ট', nameEn: 'Jeans Pant', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1760525585.png', targetSlug: 'jeans-pant' },
+  { id: 10, name: 'চিনো প্যান্ট', nameEn: 'Chino Pant', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173820.png', targetSlug: 'chino-pant' },
+  { id: 14, name: 'গার্লস টপস', nameEn: 'Girls Tops', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173900.png', targetSlug: 'girls-tops' },
+  { id: 5, name: 'রেডিমেড থ্রিপিস', nameEn: 'Readymade Three-Piece', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1691436552.png', targetSlug: 'three-piece' },
+  { id: 50, name: 'রেগুলার বেডশীট', nameEn: 'Regular Bedsheets', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1788866862.jpeg', targetSlug: 'bedsheet' },
+  { id: 6, name: 'কাপল শাড়ী', nameEn: 'Couple Saree', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1691436695.png', targetSlug: 'couple-saree' },
+  { id: 68, name: 'সুন্নাতি ড্রেস', nameEn: 'Sunnati Dress', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1738404195.png', targetSlug: 'sunnati-dress' },
+  { id: 16, name: 'ইনার & নাইটি', nameEn: 'Inner & Nighty', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696256243.png', targetSlug: 'inner-nighty' },
+  { id: 18, name: 'থ্রি পিস', nameEn: 'Three Piece', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1691436552.png', targetSlug: 'three-piece' },
+  { id: 37, name: 'গাউন ও কুর্তি', nameEn: 'Gown & Kurti', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696259740.jpg', targetSlug: 'girls-tops' },
+  { id: 172, name: 'মেয়েদের পোশাক', nameEn: 'Women Fashion', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173900.png', targetSlug: 'girls-clothing' },
+  { id: 45, name: 'হুডি / সোয়েটশার্ট', nameEn: 'Hoodie & Sweatshirt', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1698096670.jpeg', targetSlug: 'hoodie-sweatshirt' },
+  { id: 47, name: 'জ্যাকেট / ব্লেজার', nameEn: 'Jacket & Blazer', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1698097125.png', targetSlug: 'jacket-blazer' },
+  { id: 83, name: 'কিডস কালেকশন', nameEn: 'Kids Collection', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1769590419.png', targetSlug: 'kids-clothing' },
   { id: 19, name: 'পলো শার্ট', nameEn: 'Polo Shirt', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1738393401.png', targetSlug: 'polo-shirts' },
   { id: 3, name: 'ড্রপসোল্ডার টিশার্ট', nameEn: 'Drop Shoulder T-Shirt', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1769500397.png', targetSlug: 'dropshoulder-tshirt' },
   { id: 80, name: 'বেসিক টিশার্ট', nameEn: 'Basic T-Shirt', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1769500295.png', targetSlug: 'basic-tshirt' },
@@ -46,12 +65,6 @@ export const POPULAR_SHOPBASE_CATEGORIES: ShopBaseCategoryItem[] = [
   { id: 32, name: 'শর্ট কম্বো', nameEn: 'Short Combo', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173751.png', targetSlug: 'short-combo' },
   { id: 75, name: 'হাফ স্লিভ সেট', nameEn: 'Half Sleeve Set', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1760424071.png', targetSlug: 'half-sleeve-set' },
   { id: 31, name: 'লং স্লিভ সেট', nameEn: 'Long Sleeve Set', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1760424294.png', targetSlug: 'long-sleeve-set' },
-  { id: 4, name: 'জিন্স প্যান্ট', nameEn: 'Jeans Pant', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173800.png', targetSlug: 'jeans-pant' },
-  { id: 10, name: 'চিনো প্যান্ট', nameEn: 'Chino Pant', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173820.png', targetSlug: 'chino-pant' },
-  { id: 5473, name: 'মেয়েদের পোশাক', nameEn: 'Girls Clothing', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173900.png', targetSlug: 'girls-clothing' },
-  { id: 51, name: 'নতুন কালেকশন', nameEn: 'New Collection', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173900.png', targetSlug: 'products/5/1' },
-  { id: 14, name: 'গার্লস টপস', nameEn: 'Girls Tops', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173900.png', targetSlug: 'girls-tops' },
-  { id: 18, name: 'থ্রি পিস', nameEn: 'Three Piece', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696173950.png', targetSlug: 'three-piece' },
   { id: 25, name: 'স্মার্ট ওয়াচ', nameEn: 'Smart Watch', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696174050.png', targetSlug: 'smart-watch' },
   { id: 28, name: 'এয়ারবাডস / হেডফোন', nameEn: 'Airbuds / Headphone', image: 'https://shopbasebd.com/public/uploads/shop/category/scategory-1696174100.png', targetSlug: 'airbuds-headphone' },
 ];
@@ -333,6 +346,350 @@ export const CURATED_SHOPBASE_PRODUCTS: {
     sizes: ['M', 'L', 'XL'],
     description: 'Fabrics: Dry-fit breathable mesh polyester\nIdeal for gym, running, and casual home comfort\nSize: M, L, XL',
   },
+  {
+    pid: 31950,
+    name: 'Export Quality Narrow Fit Blue Jeans Pant',
+    nameBn: 'এক্সপোর্ট কোয়ালিটি ন্যারো ফিট ব্লু জিন্স প্যান্ট',
+    sprice: 650,
+    price: 1150,
+    img_sm: '1786521400_S_1.jpg',
+    categoryName: 'জিন্স প্যান্ট',
+    categorySlug: 'jeans-pant',
+    sizes: ['30', '32', '34', '36'],
+    description: 'Fabric: 98% Premium Denim Cotton, 2% Spandex (Stretchable)\nFinest wash, comfortable waist and durable zipper\nSizes: 30, 32, 34, 36',
+  },
+  {
+    pid: 31948,
+    name: 'Premium Stretchable Black Jeans Pant for Men',
+    nameBn: 'প্রিমিয়াম স্ট্রেচেবল ব্ল্যাক জিন্স প্যান্ট (পুরুষদের)',
+    sprice: 680,
+    price: 1200,
+    img_sm: '1786521400_S_2.jpg',
+    categoryName: 'জিন্স প্যান্ট',
+    categorySlug: 'jeans-pant',
+    sizes: ['30', '32', '34', '36'],
+    description: 'Fabric: Jet Black Stretch Denim\nColor guaranteed, modern slim-fit cut\nSizes: 30, 32, 34, 36',
+  },
+  {
+    pid: 31920,
+    name: 'Comfort Fit Cotton Twill Chino Pant Olive',
+    nameBn: 'কমফোর্ট ফিট কটন টুইল চিনো প্যান্ট (অলিভ)',
+    sprice: 580,
+    price: 990,
+    img_sm: '1786410290_S_1.jpg',
+    categoryName: 'চিনো প্যান্ট',
+    categorySlug: 'chino-pant',
+    sizes: ['30', '32', '34', '36'],
+    description: 'Fabric: 100% Cotton Twill\nFormal and smart casual office wear\nSizes: 30, 32, 34, 36',
+  },
+  {
+    pid: 31918,
+    name: 'Stylish Slim Fit Beige Chino Pant',
+    nameBn: 'স্টাইলিশ স্লিম ফিট বেইজ চিনো প্যান্ট',
+    sprice: 580,
+    price: 990,
+    img_sm: '1786410290_S_2.jpg',
+    categoryName: 'চিনো প্যান্ট',
+    categorySlug: 'chino-pant',
+    sizes: ['30', '32', '34', '36'],
+    description: 'Fabric: Premium Combed Twill Cotton\nSoft touch, wrinkle resistant, standard fitting\nSizes: 30, 32, 34, 36',
+  },
+  {
+    pid: 31850,
+    name: 'Trendy Printed Cotton Tops for Girls Pink',
+    nameBn: 'ট্রেন্ডি প্রিন্টেড সুতি গার্লস টপস (গোলাপি)',
+    sprice: 350,
+    price: 650,
+    img_sm: '1786290140_S_1.jpg',
+    categoryName: 'গার্লস টপস',
+    categorySlug: 'girls-tops',
+    sizes: ['S', 'M', 'L', 'XL'],
+    description: 'Fabric: 100% Soft Cotton Linen\nComfortable western style casual tops for girls & women\nSizes: S, M, L, XL',
+  },
+  {
+    pid: 31848,
+    name: 'Stylish Floral Embroidery Tops for Girls White',
+    nameBn: 'স্টাইলিশ ফ্লোরাল এমব্রয়ডারি গার্লস টপস (সাদা)',
+    sprice: 390,
+    price: 700,
+    img_sm: '1786290140_S_2.jpg',
+    categoryName: 'গার্লস টপস',
+    categorySlug: 'girls-tops',
+    sizes: ['S', 'M', 'L', 'XL'],
+    description: 'Fabric: Fine Georgette / Cotton Blend with inner lining\nUnique neck embroidery\nSizes: S, M, L, XL',
+  },
+  {
+    pid: 31780,
+    name: 'Exclusive Boutique Three Piece Collection Cyan',
+    nameBn: 'এক্সক্লুসিভ বুটিক থ্রি পিস কালেকশন (সায়ান ব্লু)',
+    sprice: 950,
+    price: 1650,
+    img_sm: '1786110294_S_1.jpg',
+    categoryName: 'মেয়েদের পোশাক',
+    categorySlug: 'girls-clothing',
+    sizes: ['Free Size (Unstitched / Semi-stitched)'],
+    description: 'Kameez: Soft Cotton with Heavy Embroidery\nSalwar: Cotton 2.5 গজ\nDupatta: Chiffon Digital Print 5 হাত\nPremium party & festive wear',
+  },
+  {
+    pid: 31778,
+    name: 'Indian Sequence Work Party Three Piece Maroon',
+    nameBn: 'সিকোয়েন্স ওয়ার্ক পার্টি থ্রি পিস (মেরুন)',
+    sprice: 1150,
+    price: 1950,
+    img_sm: '1786110294_S_2.jpg',
+    categoryName: 'মেয়েদের পোশাক',
+    categorySlug: 'girls-clothing',
+    sizes: ['Free Size'],
+    description: 'Fabrics: Butterfly Georgette with sequence and zari work\nDupatta: Net embroidery\nInner: Butter silk provided',
+  },
+  {
+    pid: 31690,
+    name: 'Winter Warm Lightweight Puffer Jacket Black',
+    nameBn: 'উইন্টার ওয়ার্ম লাইটওয়েট পাফার জ্যাকেট (কালো)',
+    sprice: 850,
+    price: 1550,
+    img_sm: '1785980120_S_1.jpg',
+    categoryName: 'জ্যাকেট / ব্লেজার',
+    categorySlug: 'jacket-blazer',
+    sizes: ['M', 'L', 'XL', 'XXL'],
+    description: 'Fabric: Windproof & Water Resistant Parachute with polyester padding\nHigh-neck zipper, 2 side warm pockets\nSizes: M, L, XL, XXL',
+  },
+  {
+    pid: 31650,
+    name: 'Premium Fleece Pullover Hoodie Navy Blue',
+    nameBn: 'প্রিমিয়াম ফ্লিস পুলওভার হুডি (নেভি ব্লু)',
+    sprice: 490,
+    price: 890,
+    img_sm: '1785890210_S_1.jpg',
+    categoryName: 'হুডি / সোয়েটশার্ট',
+    categorySlug: 'hoodie-sweatshirt',
+    sizes: ['M', 'L', 'XL'],
+    description: 'Fabric: 300+ GSM Heavy Cotton Fleece with soft inner brush\nKangaroo front pocket, adjustable hood drawstring\nSizes: M, L, XL',
+  },
+  {
+    pid: 31590,
+    name: 'Cute Cartoon Print Soft Cotton Kids Set',
+    nameBn: 'কিউট কার্টুন প্রিন্ট সফট কটন কিডস সেট',
+    sprice: 320,
+    price: 590,
+    img_sm: '1785720190_S_1.jpg',
+    categoryName: 'কিডস কালেকশন',
+    categorySlug: 'kids-clothing',
+    sizes: ['2-3 Years', '4-5 Years', '6-7 Years'],
+    description: 'Fabric: 100% Organic Breathable Baby Cotton\nNon-toxic baby friendly print, gentle on skin\nSizes: 2-3Y, 4-5Y, 6-7Y',
+  },
+  {
+    pid: 31500,
+    name: 'Trendy Oversized Printed Streetwear Shirt',
+    nameBn: 'ট্রেন্ডি ওভারসাইজড প্রিন্টেড নিউ কালেকশন শার্ট',
+    sprice: 420,
+    price: 750,
+    img_sm: '1785500120_S_1.jpg',
+    categoryName: 'নতুন কালেকশন',
+    categorySlug: 'new-collection',
+    sizes: ['M', 'L', 'XL'],
+    description: 'Fabric: Premium Rayon Twill\nCuban spread collar, breathable lightweight summer fit\nSizes: M, L, XL',
+  },
+  // Category 93: ওয়ার্ল্ড কাপ
+  {
+    pid: 30328,
+    name: 'Premium Baby World Cup Jersey',
+    nameBn: 'প্রিমিয়াম বেবি ওয়ার্ল্ড কাপ জার্সি',
+    sprice: 290,
+    price: 500,
+    img_sm: '1782322578_S_3.jpg',
+    categoryName: 'ওয়ার্ল্ড কাপ',
+    categorySlug: 'world-cup',
+    sizes: ['M', 'L', 'XL', 'XXL'],
+    description: '100% Export Quality Breathable Dry-fit Jersey Fabric. World cup emblem print with comfortable fitting.',
+  },
+  {
+    pid: 30066,
+    name: 'World Cup Embroidery Cap',
+    nameBn: 'ওয়ার্ল্ড কাপ প্রিমিয়াম এমব্রয়ডারি ক্যাপ',
+    sprice: 180,
+    price: 300,
+    img_sm: '1780431305_S_1.jpg',
+    categoryName: 'ওয়ার্ল্ড কাপ',
+    categorySlug: 'world-cup',
+    sizes: ['Free Size'],
+    description: 'Cotton Twill fabric with high density World Cup embroidery. Adjustable strap closure.',
+  },
+  {
+    pid: 30030,
+    name: 'Premium World Cup Drop Shoulder T-Shirt',
+    nameBn: 'প্রিমিয়াম ওয়ার্ল্ড কাপ ড্রপ সোল্ডার টিশার্ট',
+    sprice: 320,
+    price: 600,
+    img_sm: '1780321645_S_10.jpg',
+    categoryName: 'ওয়ার্ল্ড কাপ',
+    categorySlug: 'world-cup',
+    sizes: ['M', 'L', 'XL'],
+    description: '200+ GSM Comb Cotton with World Cup theme graphic print. Trendy oversized streetwear cut.',
+  },
+  // Category 38: বোরকা ও আবায়া
+  {
+    pid: 32611,
+    name: 'Safa Borka Full Set',
+    nameBn: 'সাফা এক্সক্লুসিভ বোরকা ফুল সেট (হিজাব সহ)',
+    sprice: 1720,
+    price: 2200,
+    img_sm: '1788715913_S_3.jpg',
+    categoryName: 'বোরকা ও আবায়া',
+    categorySlug: 'borka-abaya',
+    sizes: ['52', '54', '56'],
+    description: 'Material: Original Dubai Cherry fabric with delicate stone and embroidery work. Includes matching designer hijab.',
+  },
+  {
+    pid: 32598,
+    name: 'Karchupi Borka (Only Borka)',
+    nameBn: 'কারচুপি ডিজাইনার বোরকা',
+    sprice: 940,
+    price: 1300,
+    img_sm: '1788713660_S_4.jpg',
+    categoryName: 'বোরকা ও আবায়া',
+    categorySlug: 'borka-abaya',
+    sizes: ['52', '54', '56'],
+    description: 'Premium Soft Georgette with handcrafted Karchupi stone work. Elegant modest wear.',
+  },
+  {
+    pid: 32594,
+    name: 'Afran Stone Borka (Only Borka)',
+    nameBn: 'আফরান স্টোন ওয়ার্ক এক্সক্লুসিভ বোরকা',
+    sprice: 940,
+    price: 1300,
+    img_sm: '1788713481_S_7.jpg',
+    categoryName: 'বোরকা ও আবায়া',
+    categorySlug: 'borka-abaya',
+    sizes: ['52', '54', '56'],
+    description: 'Comfortable breathable Dubai fabric with durable hot-fix stones. Perfect for daily and festive wear.',
+  },
+  // Category 64: তাঁতের শাড়ী
+  {
+    pid: 32936,
+    name: 'Soft Silk Katan Saree',
+    nameBn: 'সফট সিল্ক কাত্তান তাঁতের শাড়ী (ব্লাউজ পিস সহ)',
+    sprice: 660,
+    price: 1050,
+    img_sm: '1789309285_S_3.jpg',
+    categoryName: 'তাঁতের শাড়ী',
+    categorySlug: 'tanter-saree',
+    sizes: ['Free Size (১২ হাত)'],
+    description: 'Traditional Handloom Taat Saree in soft silk texture. Eye-catching pallu and all-over intricate weaving with matching blouse piece.',
+  },
+  {
+    pid: 32924,
+    name: 'Puja Special Katan Saree',
+    nameBn: 'পূজা স্পেশাল কাত্তান তাঁতের শাড়ী',
+    sprice: 790,
+    price: 1250,
+    img_sm: '1789307597_S_5.jpg',
+    categoryName: 'তাঁতের শাড়ী',
+    categorySlug: 'tanter-saree',
+    sizes: ['Free Size (১২ হাত)'],
+    description: 'Festive collection Katan saree with golden zari border. Light-weight and extremely comfortable to drape.',
+  },
+  // Category 66: হ্যান্ডপ্রিন্ট শাড়ি
+  {
+    pid: 20804,
+    name: 'Hand print Sharee',
+    nameBn: 'এক্সক্লুসিভ হ্যান্ডপ্রিন্ট সুতি শাড়ি',
+    sprice: 650,
+    price: 1000,
+    img_sm: '1751352481_S_6.jpg',
+    categoryName: 'হ্যান্ডপ্রিন্ট শাড়ি',
+    categorySlug: 'handprint-saree',
+    sizes: ['Free Size (১২ হাত)'],
+    description: 'Handcrafted floral hand-paint by skilled artisans on 100% pure organic cotton. Fade resistant colors.',
+  },
+  {
+    pid: 17031,
+    name: 'Hand Print Half Silk Sharee',
+    nameBn: 'হ্যান্ডপ্রিন্ট হাফ সিল্ক শাড়ি',
+    sprice: 599,
+    price: 900,
+    img_sm: '1737622505_S_17.jpg',
+    categoryName: 'হ্যান্ডপ্রিন্ট শাড়ি',
+    categorySlug: 'handprint-saree',
+    sizes: ['Free Size (১২ হাত)'],
+    description: 'Glamorous half silk fabric with artistic hand painting. Elegant drape for social gatherings and celebrations.',
+  },
+  // Category 4: শাড়ি
+  {
+    pid: 33124,
+    name: 'Khadi Suti Sharee with Blouse Piece',
+    nameBn: 'খাদি সুতি শাড়ি (ব্লাউজ পিস সহ)',
+    sprice: 950,
+    price: 1350,
+    img_sm: '1789756475_S_3.jpg',
+    categoryName: 'শাড়ি',
+    categorySlug: 'saree',
+    sizes: ['Free Size (১২ হাত)'],
+    description: 'Authentic Khadi cotton saree with rich texture. Comes with matching 80cm unstitched blouse piece.',
+  },
+  {
+    pid: 33118,
+    name: 'Hybrid Silk Sharee with Blouse Piece',
+    nameBn: 'হাইব্রিড সিল্ক গর্জিয়াস শাড়ি',
+    sprice: 650,
+    price: 950,
+    img_sm: '1789756060_S_3.jpg',
+    categoryName: 'শাড়ি',
+    categorySlug: 'saree',
+    sizes: ['Free Size (১২ হাত)'],
+    description: 'Shiny hybrid silk fabric with printed border and stylish pallu. Highly durable and vibrant color finish.',
+  },
+  // Category 49: জিন্স ও চিনো প্যান্ট
+  {
+    pid: 32910,
+    name: 'Stylish Semi Baggy Cargo Denim Pant',
+    nameBn: 'স্টাইলিশ সেমি ব্যাগি কার্গো ডেনিম জিন্স প্যান্ট',
+    sprice: 480,
+    price: 900,
+    img_sm: '1789242946_S_3.jpg',
+    categoryName: 'জিন্স প্যান্ট',
+    categorySlug: 'jeans-pant',
+    sizes: ['28', '30', '32', '34', '36'],
+    description: 'Export Quality 12.5oz Cotton Denim with cargo pockets. Semi-baggy relaxed fit with comfortable stretch.',
+  },
+  {
+    pid: 33211,
+    name: 'Premium Chinese Dubai Fabric Trousers',
+    nameBn: 'প্রিমিয়াম চায়নিজ দুবাই ফেব্রিক চিনো প্যান্ট / ট্রাউজার',
+    sprice: 660,
+    price: 1000,
+    img_sm: '1789923669_S_6.jpg',
+    categoryName: 'চিনো প্যান্ট',
+    categorySlug: 'chino-pant',
+    sizes: ['30', '32', '34', '36'],
+    description: '4-Way stretch wrinkle-free twill fabric. Formal and casual slim fit trousers with deep side pockets.',
+  },
+  // Category 5: রেডিমেড থ্রিপিস
+  {
+    pid: 33274,
+    name: 'Embroidery Readymade Three Piece',
+    nameBn: 'এমব্রয়ডারি রেডিমেড সুতি থ্রিপিস',
+    sprice: 950,
+    price: 1400,
+    img_sm: '1790249695_S_6.jpg',
+    categoryName: 'থ্রি পিস',
+    categorySlug: 'three-piece',
+    sizes: ['M', 'L', 'XL'],
+    description: '100% Pure cotton readymade kameez with heavy thread embroidery, matching pant and large printed dupatta.',
+  },
+  // Category 37: গার্লস টপস ও গাউন
+  {
+    pid: 33174,
+    name: 'One Piece Gown & Kurti',
+    nameBn: 'ট্রেন্ডি ওয়ান পিস গাউন ও কুর্তি টপস',
+    sprice: 290,
+    price: 550,
+    img_sm: '1789811056_S_18.jpg',
+    categoryName: 'গার্লস টপস',
+    categorySlug: 'girls-tops',
+    sizes: ['M', 'L', 'XL'],
+    description: 'Soft lightweight rayon fabric with stylish neck button detailing. Easy wash and wear for college and work.',
+  },
 ];
 
 /**
@@ -558,6 +915,85 @@ export async function fetchShopBaseProductsByCategory(
   );
 }
 
+export interface ShopBaseInputParseResult {
+  type: 'category' | 'product';
+  id: number;
+  page?: number;
+  originalInput: string;
+}
+
+/**
+ * Intelligent parser for any ShopBaseBD input:
+ * - Category URLs: e.g. https://shopbasebd.com/store/products/93/1, /store/sample/products/93, /products/38/1
+ * - Single Product URLs: e.g. https://shopbasebd.com/store/sample/product/details/32846
+ * - Pure IDs: e.g. 93 (category), 32950 (product)
+ */
+export function parseShopBaseInput(input: string): ShopBaseInputParseResult | null {
+  const clean = (input || '').trim();
+  if (!clean) return null;
+
+  // 1. Explicit Category URL pattern
+  // e.g. https://shopbasebd.com/store/products/93/1 or /store/sample/products/38 or /store/products/64
+  const catMatch = clean.match(/\/store\/products\/(\d+)(?:\/(\d+))?/i) ||
+                   clean.match(/\/store\/sample\/products\/(\d+)/i) ||
+                   clean.match(/\/sample-product\/data\/(\d+)/i);
+  if (catMatch) {
+    return {
+      type: 'category',
+      id: parseInt(catMatch[1], 10),
+      page: catMatch[2] ? parseInt(catMatch[2], 10) : 1,
+      originalInput: clean,
+    };
+  }
+
+  // 2. Explicit Product Details URL pattern
+  // e.g. https://shopbasebd.com/store/sample/product/details/32846 or /product/details/32950
+  const prodMatch = clean.match(/details\/(\d+)/i) ||
+                    clean.match(/\/product\/(\d+)/i);
+  if (prodMatch) {
+    return {
+      type: 'product',
+      id: parseInt(prodMatch[1], 10),
+      originalInput: clean,
+    };
+  }
+
+  // 3. Generic /products/(\d+)(?:/(\d+))?
+  const genericProductsMatch = clean.match(/products\/(\d+)(?:\/(\d+))?/i);
+  if (genericProductsMatch) {
+    const id = parseInt(genericProductsMatch[1], 10);
+    if (genericProductsMatch[2] || id < 1000) {
+      return {
+        type: 'category',
+        id,
+        page: genericProductsMatch[2] ? parseInt(genericProductsMatch[2], 10) : 1,
+        originalInput: clean,
+      };
+    }
+  }
+
+  // 4. Pure numeric ID:
+  const numMatch = clean.match(/^\d+$/);
+  if (numMatch) {
+    const num = parseInt(clean, 10);
+    if (num < 1000) {
+      return {
+        type: 'category',
+        id: num,
+        originalInput: clean,
+      };
+    } else {
+      return {
+        type: 'product',
+        id: num,
+        originalInput: clean,
+      };
+    }
+  }
+
+  return null;
+}
+
 /**
  * Fetch a single product by ShopBaseBD Product ID or URL
  */
@@ -570,15 +1006,15 @@ export async function fetchShopBaseSingleProduct(
   if (typeof identifier === 'number') {
     pid = identifier;
   } else {
-    // Extract PID from URL like https://shopbasebd.com/store/sample/product/details/32846
-    const clean = identifier.trim();
-    // More flexible regex to match common ShopBaseBD URL patterns
-    const match = clean.match(/details\/(\d+)/i) || 
-                  clean.match(/products\/(\d+)/i) || 
-                  clean.match(/product\/(\d+)/i) || 
-                  clean.match(/(\d+)$/);
-    if (match) {
-      pid = parseInt(match[1], 10);
+    const parsed = parseShopBaseInput(identifier);
+    if (parsed && parsed.type === 'product') {
+      pid = parsed.id;
+    } else {
+      const clean = identifier.trim();
+      const match = clean.match(/details\/(\d+)/i) || clean.match(/(\d{4,})$/);
+      if (match) {
+        pid = parseInt(match[1], 10);
+      }
     }
   }
 
@@ -618,10 +1054,13 @@ export async function fetchShopBaseSingleProduct(
         price,
       };
 
+      const detectedSlug = mapNameToCategorySlug(title);
+      const catMeta = getShopBaseCategoryMetadata(detectedSlug);
+
       const product = convertShopBaseToProduct(
         rawItem,
-        'mens-clothing',
-        'ShopBaseBD কালেকশন',
+        catMeta.slug || 'mens-clothing',
+        catMeta.nameBn || 'ShopBaseBD কালেকশন',
         marginPercent,
         description,
         images
@@ -678,6 +1117,20 @@ export function getCuratedShopBaseProducts(marginPercent: number = 15): Product[
 // Utility to map Bengali category names to our website category slugs
 export function mapNameToCategorySlug(name: string): string {
   const n = (name || '').toLowerCase().trim();
+  if (n.includes('ওয়ার্ল্ড কাপ') || n.includes('ওয়ার্ল্ড কাপ') || n.includes('world cup')) return 'world-cup';
+  if (n.includes('বোরকা') || n.includes('আবায়া') || n.includes('borka') || n.includes('abaya')) return 'borka-abaya';
+  if (n.includes('তাঁতের') || n.includes('তাঁত') || n.includes('tanter')) return 'tanter-saree';
+  if (n.includes('হ্যান্ডপ্রিন্ট') || n.includes('handprint')) return 'handprint-saree';
+  if (n.includes('শাড়ি') || n.includes('শাড়ী') || n.includes('saree') || n.includes('sharee') || n.includes('sari')) return 'saree';
+  if (n.includes('জিন্স') || n.includes('jeans') || n.includes('ডেনিম') || n.includes('denim')) return 'jeans-pant';
+  if (n.includes('চিনো') || n.includes('chino') || n.includes('ট্রাউজার') || n.includes('trouser')) return 'chino-pant';
+  if (n.includes('টপস') || n.includes('কুর্তি') || n.includes('গাউন') || n.includes('tops') || n.includes('kurti') || n.includes('gown')) return 'girls-tops';
+  if (n.includes('থ্রি পিস') || n.includes('থ্রীপিস') || n.includes('three piece')) return 'three-piece';
+  if (n.includes('মেয়েদের পোশাক') || n.includes('women fashion') || n.includes('গার্লস')) return 'girls-clothing';
+  if (n.includes('জ্যাকেট') || n.includes('ব্লেজার') || n.includes('jacket') || n.includes('blazer')) return 'jacket-blazer';
+  if (n.includes('হুডি') || n.includes('সোয়েটশার্ট') || n.includes('hoodie') || n.includes('sweatshirt')) return 'hoodie-sweatshirt';
+  if (n.includes('কিডস') || n.includes('বাচ্চা') || n.includes('বেবি') || n.includes('kid')) return 'kids-clothing';
+  if (n.includes('নতুন কালেকশন') || n.includes('new collection')) return 'new-collection';
   if (n.includes('পলো') || n.includes('polo')) return 'polo-shirts';
   if (n.includes('ড্রপসোল্ডার') || n.includes('drop shoulder')) return 'dropshoulder-tshirt';
   if (n.includes('বেসিক টিশার্ট') || n.includes('basic t')) return 'basic-tshirt';
@@ -695,10 +1148,6 @@ export function mapNameToCategorySlug(name: string): string {
   if (n.includes('শর্ট কম্বো') || n.includes('short combo')) return 'short-combo';
   if (n.includes('হাফ স্লিভ সেট') || n.includes('half sleeve set')) return 'half-sleeve-set';
   if (n.includes('লং স্লিভ সেট') || n.includes('long sleeve set')) return 'long-sleeve-set';
-  if (n.includes('জিন্স') || n.includes('jeans')) return 'jeans-pant';
-  if (n.includes('চিনো') || n.includes('chino')) return 'chino-pant';
-  if (n.includes('গার্লস') || n.includes('মেয়ে') || n.includes('টপস')) return 'girls-tops';
-  if (n.includes('থ্রি পিস') || n.includes('three piece')) return 'three-piece';
   if (n.includes('স্মার্ট ওয়াচ') || n.includes('smart watch')) return 'smart-watch';
   if (n.includes('এয়ারবাডস') || n.includes('হেডফোন') || n.includes('earbuds') || n.includes('headphone')) return 'airbuds-headphone';
   if (n.includes('শার্ট') || n.includes('shirt')) return 'printed-shirt';

@@ -113,7 +113,7 @@ export const FeaturedSections: React.FC = () => {
         ) : filteredFeatured.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
             {filteredFeatured.map((product, idx) => (
-              <ProductCard key={`feat-${product.id}-${idx}`} product={product} />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
@@ -153,7 +153,7 @@ export const FeaturedSections: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {bestSellers.map((prod, idx) => (
-                <ProductCard key={`best-${prod.id}-${idx}`} product={prod} />
+                <ProductCard key={prod.id} product={prod} />
               ))}
             </div>
           </div>
@@ -182,7 +182,7 @@ export const FeaturedSections: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {newArrivals.map((prod, idx) => (
-                <ProductCard key={`new-${prod.id}-${idx}`} product={prod} />
+                <ProductCard key={prod.id} product={prod} />
               ))}
             </div>
           </div>

@@ -183,7 +183,7 @@ data class SiteSettings(
     val whatsappLink: String = "https://wa.me/1234567890",
     val facebookLink: String = "https://facebook.com",
     val messengerLink: String = "https://m.me/yourpage",
-    val appNameBn: String = "OneRoof মোবাইল অ্যাপ",
+    val appNameBn: String = "OneRoof Mart মোবাইল অ্যাপ",
     val appSubtitleBn: String = "সহজ ও দ্রুত কেনাকাটার জন্য ডাউনলোড করুন"
 )
 

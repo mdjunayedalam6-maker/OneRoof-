@@ -70,7 +70,7 @@ fun AppHeader(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "OneRoof",
+                            text = "OneRoof Mart",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White

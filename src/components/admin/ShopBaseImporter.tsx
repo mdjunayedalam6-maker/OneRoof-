@@ -17,7 +17,7 @@ import {
   Check,
   PackageCheck
 } from 'lucide-react';
-import { Product } from '../../types';
+import { Product, Category } from '../../types';
 import { 
   POPULAR_SHOPBASE_CATEGORIES, 
   CURATED_SHOPBASE_PRODUCTS,
@@ -26,6 +26,8 @@ import {
   fetchShopBaseSingleProduct,
   getCuratedShopBaseProducts,
   calculateSellingPrice,
+  parseShopBaseInput,
+  mapNameToCategorySlug,
   ShopBaseCategoryItem
 } from '../../services/shopbaseService';
 
@@ -34,6 +36,8 @@ interface ShopBaseImporterProps {
   addMultipleProducts: (newProducts: Product[]) => void;
   addProduct: (product: Product) => void;
   formatPrice: (amount: number) => string;
+  categories: Category[];
+  addCategory: (newCat: Category) => void;
 }
 
 export const ShopBaseImporter: React.FC<ShopBaseImporterProps> = ({
@@ -41,6 +45,8 @@ export const ShopBaseImporter: React.FC<ShopBaseImporterProps> = ({
   addMultipleProducts,
   addProduct,
   formatPrice,
+  categories: siteCategories,
+  addCategory,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'curated' | 'category' | 'single' | 'guide'>('curated');
   
@@ -65,6 +71,19 @@ export const ShopBaseImporter: React.FC<ShopBaseImporterProps> = ({
   const [isFetchingSingle, setIsFetchingSingle] = useState(false);
   const [singlePreviewProduct, setSinglePreviewProduct] = useState<Product | null>(null);
   const [singleFetchError, setSingleFetchError] = useState('');
+
+  // Detected category state in Single / Custom URL Tab
+  const [detectedCategoryResult, setDetectedCategoryResult] = useState<{
+    id: number;
+    name: string;
+    nameEn: string;
+    targetSlug: string;
+    image: string;
+    iconName: string;
+    products: Product[];
+  } | null>(null);
+  const [selectedDetectedProductIds, setSelectedDetectedProductIds] = useState<Set<string>>(new Set());
+  const [isImportingDetectedCategory, setIsImportingDetectedCategory] = useState(false);
 
   // Already imported IDs
   const existingProductIds = new Set(products.map((p) => p.id));
@@ -155,25 +174,97 @@ export const ShopBaseImporter: React.FC<ShopBaseImporterProps> = ({
     }, 400);
   };
 
-  // Fetch single product
+  // Fetch single product or category from URL or ID
   const handleFetchSingle = async () => {
     if (!singleInput.trim()) return;
     setIsFetchingSingle(true);
     setSingleFetchError('');
     setSinglePreviewProduct(null);
+    setDetectedCategoryResult(null);
 
     try {
-      const item = await fetchShopBaseSingleProduct(singleInput.trim(), profitMargin);
-      if (item) {
-        setSinglePreviewProduct(item);
+      const parsed = parseShopBaseInput(singleInput.trim());
+
+      if (parsed && parsed.type === 'category') {
+        const foundMeta = POPULAR_SHOPBASE_CATEGORIES.find((c) => c.id === parsed.id);
+        const catName = foundMeta ? foundMeta.name : `ক্যাটাগরি #${parsed.id}`;
+        const targetSlug = foundMeta ? foundMeta.targetSlug : mapNameToCategorySlug(catName);
+        const catImage = foundMeta?.image || 'https://shopbasebd.com/public/uploads/shop/category/scategory-1738393401.png';
+
+        const items = await fetchShopBaseProductsByCategory(
+          parsed.id,
+          targetSlug,
+          catName,
+          profitMargin
+        );
+
+        if (items && items.length > 0) {
+          setDetectedCategoryResult({
+            id: parsed.id,
+            name: catName,
+            nameEn: foundMeta?.nameEn || targetSlug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+            targetSlug,
+            image: catImage,
+            iconName: targetSlug.includes('watch') || targetSlug.includes('phone') || targetSlug.includes('electronics') ? 'Smartphone' : 'Shirt',
+            products: items,
+          });
+          const unimported = items.filter((p) => !existingProductIds.has(p.id)).map((p) => p.id);
+          setSelectedDetectedProductIds(new Set(unimported));
+        } else {
+          setSingleFetchError(`ক্যাটাগরি #${parsed.id}-তে কোনো প্রোডাক্ট পাওয়া যায়নি।`);
+        }
       } else {
-        setSingleFetchError('প্রোডাক্টটি পাওয়া যায়নি। সঠিক ShopBase লিংক বা আইডি (যেমন: 32950 বা 32846) দিন।');
+        const item = await fetchShopBaseSingleProduct(singleInput.trim(), profitMargin);
+        if (item) {
+          setSinglePreviewProduct(item);
+        } else {
+          setSingleFetchError('প্রোডাক্টটি পাওয়া যায়নি। সঠিক ShopBase লিংক (যেমন: https://shopbasebd.com/store/products/93/1 বা https://shopbasebd.com/store/sample/product/details/32846) অথবা আইডি দিন।');
+        }
       }
     } catch (e) {
       setSingleFetchError('ডাটা ফেচ করতে সমস্যা হয়েছে। দয়া করে ইন্টারনেট সংযোগ বা লিংকটি পুনরায় চেক করুন।');
     } finally {
       setIsFetchingSingle(false);
     }
+  };
+
+  const handleImportDetectedCategory = () => {
+    if (!detectedCategoryResult) return;
+    
+    setIsImportingDetectedCategory(true);
+    setTimeout(() => {
+      // 1. Check and add/update Category in local store
+      const exists = siteCategories.some(
+        (c) => (c.slug || '').trim().toLowerCase() === detectedCategoryResult.targetSlug.trim().toLowerCase()
+      );
+      
+      if (!exists) {
+        const newCat: Category = {
+          id: detectedCategoryResult.targetSlug,
+          nameBn: detectedCategoryResult.name,
+          nameEn: detectedCategoryResult.nameEn,
+          slug: detectedCategoryResult.targetSlug,
+          iconName: detectedCategoryResult.iconName,
+          image: detectedCategoryResult.image,
+          itemCount: detectedCategoryResult.products.length,
+          featured: true,
+        };
+        addCategory(newCat);
+      }
+      
+      // 2. Import all products of that category
+      const toImport = detectedCategoryResult.products.filter(
+        (p) => !existingProductIds.has(p.id)
+      );
+      
+      if (toImport.length > 0) {
+        addMultipleProducts(toImport);
+      }
+      
+      setIsImportingDetectedCategory(false);
+      setDetectedCategoryResult(null);
+      setSingleInput('');
+    }, 400);
   };
 
   const handleImportSingle = () => {
@@ -203,7 +294,7 @@ export const ShopBaseImporter: React.FC<ShopBaseImporterProps> = ({
               ShopBaseBD থেকে সরাসরি প্রোডাক্ট আপলোড
             </h2>
             <p className="text-orange-100 text-sm mt-1 max-w-xl">
-              পাইকারি হোলসেল রেটে পণ্য নিন, <strong className="text-white underline decoration-yellow-400 font-bold">{profitMargin}% লাভ</strong> যোগ করে সরাসরি OneRoof ওয়েবসাইটে আপলোড করুন। কাস্টমার অর্ডার করলে ShopBaseBD থেকে সরাসরি ডেলিভারি হবে!
+              পাইকারি হোলসেল রেটে পণ্য নিন, <strong className="text-white underline decoration-yellow-400 font-bold">{profitMargin}% লাভ</strong> যোগ করে সরাসরি OneRoof Mart ওয়েবসাইটে আপলোড করুন। কাস্টমার অর্ডার করলে ShopBaseBD থেকে সরাসরি ডেলিভারি হবে!
             </p>
           </div>
 
@@ -583,7 +674,7 @@ export const ShopBaseImporter: React.FC<ShopBaseImporterProps> = ({
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto text-orange-500 mb-2" />
                   <p className="text-sm font-semibold">ShopBaseBD থেকে ডাটা লোড হচ্ছে...</p>
                 </div>
-              ) : (
+              ) : categoryProducts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {categoryProducts.map((item, idx) => {
                     const isAlreadyAdded = existingProductIds.has(item.id);
@@ -679,6 +770,16 @@ export const ShopBaseImporter: React.FC<ShopBaseImporterProps> = ({
                     );
                   })}
                 </div>
+              ) : (
+                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-8 text-center space-y-3">
+                  <ShoppingBag className="w-10 h-10 text-neutral-300 mx-auto" />
+                  <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">
+                    এই ক্যাটাগরিতে পণ্য লোড হচ্ছে অথবা সরাসরি লিংক দিয়ে আপলোড করতে পারবেন।
+                  </p>
+                  <p className="text-xs text-neutral-400 max-w-md mx-auto">
+                    ShopBaseBD-এর যে কোনো স্পেসিফিক প্রোডাক্ট লিংক নিয়ে 'নির্দিষ্ট লিংক / প্রোডাক্ট আইডি দিয়ে' ট্যাবে পেস্ট করলেই তা দ্রুত চলে আসবে।
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -734,6 +835,80 @@ export const ShopBaseImporter: React.FC<ShopBaseImporterProps> = ({
               </div>
             )}
           </div>
+
+          {/* Category Preview Card */}
+          {detectedCategoryResult && (
+            <div className="bg-white dark:bg-neutral-900 border-2 border-orange-500/40 p-6 rounded-2xl shadow-lg space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800">
+                <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>ক্যাটাগরি সফলভাবে পাওয়া গেছে!</span>
+                </div>
+                <span className="text-xs font-mono bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded text-neutral-600">
+                  ID: {detectedCategoryResult.id}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="aspect-square rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 border flex items-center justify-center p-4">
+                  <img
+                    src={detectedCategoryResult.image}
+                    alt={detectedCategoryResult.name}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                <div className="md:col-span-2 space-y-3">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-orange-100 text-orange-800 dark:bg-orange-950/30 dark:text-orange-300 text-xs font-bold rounded-full">
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>ShopBaseBD ক্যাটাগরি</span>
+                  </span>
+                  
+                  <h4 className="text-lg font-black text-neutral-900 dark:text-white">
+                    {detectedCategoryResult.name} ({detectedCategoryResult.nameEn})
+                  </h4>
+
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                    এই ক্যাটাগরির অধীনে মোট <strong className="text-orange-600 font-bold">{detectedCategoryResult.products.length}টি পণ্য</strong> পাওয়া গেছে। নিচের বাটনে ক্লিক করলেই এই ক্যাটাগরি তৈরি/আপডেট হয়ে যাবে এবং ক্যাটাগরির ভেতরের সমস্ত প্রোডাক্ট লাভসহ OneRoof Mart সাইটে একসাথে বাল্ক আপলোড হয়ে যাবে।
+                  </p>
+
+                  <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-xl border border-orange-200 dark:border-orange-800/40 text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-neutral-600">ক্যাটাগরি আইডি:</span>
+                      <span className="font-semibold text-neutral-900 dark:text-white">{detectedCategoryResult.id}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-600">ক্যাটাগরি স্ল্যাগ (Slug):</span>
+                      <span className="font-semibold text-neutral-900 dark:text-white">{detectedCategoryResult.targetSlug}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-600">সেট করা প্রফিট মার্জিন:</span>
+                      <span className="font-bold text-emerald-600">{profitMargin}% লাভ</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleImportDetectedCategory}
+                    disabled={isImportingDetectedCategory}
+                    className="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-xl font-bold text-sm shadow-md shadow-orange-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isImportingDetectedCategory ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>আপলোড ও ক্যাটাগরি তৈরি হচ্ছে...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        <span>ক্যাটাগরি তৈরি করে সকল {detectedCategoryResult.products.length}টি প্রোডাক্ট আপলোড করুন</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Preview Card */}
           {singlePreviewProduct && (
@@ -796,7 +971,7 @@ export const ShopBaseImporter: React.FC<ShopBaseImporterProps> = ({
                     className="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-xl font-bold text-sm shadow-md shadow-orange-600/20 flex items-center justify-center gap-2"
                   >
                     <Download className="w-4 h-4" />
-                    <span>এই প্রডাক্ট OneRoof সাইটে আপলোড করুন (১৫% লাভসহ)</span>
+                    <span>এই প্রডাক্ট OneRoof Mart সাইটে আপলোড করুন (১৫% লাভসহ)</span>
                   </button>
                 </div>
               </div>
@@ -827,7 +1002,7 @@ export const ShopBaseImporter: React.FC<ShopBaseImporterProps> = ({
                 প্রোডাক্ট আপলোড
               </h4>
               <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                এই পেজ থেকে ১৫% লাভে আপনার পছন্দের প্রোডাক্টগুলো ১-ক্লিকে OneRoof সাইটে আপলোড করুন।
+                এই পেজ থেকে ১৫% লাভে আপনার পছন্দের প্রোডাক্টগুলো ১-ক্লিকে OneRoof Mart সাইটে আপলোড করুন।
               </p>
             </div>
 

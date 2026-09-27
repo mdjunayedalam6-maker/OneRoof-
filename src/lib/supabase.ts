@@ -17,12 +17,12 @@ const getEnvVar = (key: string, fallback: string): string => {
 
 // Clean and normalize Supabase base URL (strips any trailing /rest/v1 or slashes)
 export const SUPABASE_URL = (
-  getEnvVar('VITE_SUPABASE_URL', 'https://ttsxgtzptzolkqzkhyzu.supabase.co')
+  getEnvVar('VITE_SUPABASE_URL', 'https://ppwaosjmbdyocrmhnwak.supabase.co')
 ).trim().replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 
 export const SUPABASE_ANON_KEY = getEnvVar(
   'VITE_SUPABASE_ANON_KEY',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0c3hndHpwdHpvbGtxemtoeXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0OTk3NTcsImV4cCI6MjEwNTA3NTc1N30.2sKSkNTHeCk7pydrsGa6792GHPq2J_fr21K66o9JTnk'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwd2Fvc2ptYmR5b2NybWhud2FrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0OTExOTgsImV4cCI6MjEwNjA2NzE5OH0.8zZnNTMhFZnUWXfkKwUzV07pgGOEnQSCKn7xg5GHLN4'
 ).trim();
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -34,12 +34,12 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 // SQL Schema for Supabase SQL Editor
 export const SUPABASE_SETUP_SQL = `-- =========================================================
--- OneRoof - Complete Supabase Backend Database Setup Script
--- Project: oneroof (ID: ttsxgtzptzolkqzkhyzu)
+-- OneRoof Mart - Complete Supabase Backend Database Setup Script
+-- Project: OneRoof Mart (ID: ppwaosjmbdyocrmhnwak | Region: ap-southeast-1)
 -- Instructions:
--- 1. Go to Supabase Dashboard (https://supabase.com/dashboard/project/ttsxgtzptzolkqzkhyzu)
--- 2. Open "SQL Editor" from the left sidebar
--- 3. Click "New query", paste this entire script and click "Run"
+-- 1. Go to Supabase Dashboard (https://supabase.com/dashboard/project/ppwaosjmbdyocrmhnwak/sql/new)
+-- 2. Paste this entire script into SQL Editor
+-- 3. Click "Run" button to create all tables with Realtime and RLS
 -- =========================================================
 
 -- 1. Products Table (পণ্য তালিকা)
@@ -322,6 +322,35 @@ export async function syncProductToSupabase(product: Product): Promise<boolean> 
     return true;
   } catch (e) {
     console.warn('Supabase product exception:', e);
+    return false;
+  }
+}
+
+export async function syncProductsBatchToSupabase(products: Product[]): Promise<boolean> {
+  try {
+    const batchSize = 50;
+    for (let i = 0; i < products.length; i += batchSize) {
+      const chunk = products.slice(i, i + batchSize);
+      const rows = chunk.map((product) => ({
+        id: product.id,
+        title_bn: product.titleBn,
+        title_en: product.titleEn,
+        price: product.price,
+        original_price: product.originalPrice || null,
+        category: product.category,
+        subcategory: product.subcategory || null,
+        stock: product.stock,
+        data: product,
+        updated_at: new Date().toISOString(),
+      }));
+      const { error } = await supabase.from('products').upsert(rows);
+      if (error) {
+        console.warn('Batch product sync notice:', error.message);
+      }
+    }
+    return true;
+  } catch (e) {
+    console.warn('Batch product sync exception:', e);
     return false;
   }
 }

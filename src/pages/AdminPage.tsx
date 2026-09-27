@@ -234,7 +234,7 @@ export const AdminPage: React.FC = () => {
   const THEME_PRESETS = [
     {
       id: 'classic',
-      name: 'OneRoof Classic (রয়্যাল ব্লু ও কমলা)',
+      name: 'OneRoof Mart Classic (রয়্যাল ব্লু ও কমলা)',
       primary: '#003882',
       accent: '#FF6B00',
     },
@@ -438,7 +438,7 @@ export const AdminPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `oneroof-backup-${Date.now()}.json`;
+    a.download = `oneroof-mart-backup-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
     addToast('ডাটা ব্যাকআপ ডাউনলোড সম্পন্ন হয়েছে', 'success');
@@ -455,7 +455,7 @@ export const AdminPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-black text-base sm:text-lg text-white tracking-wide">
-                OneRoof Master Control
+                OneRoof Mart Master Control
               </h1>
               <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
                 Live Admin
@@ -1646,7 +1646,7 @@ export const AdminPage: React.FC = () => {
                         type="url"
                         value={siteSettings.appDownloadUrl || ''}
                         onChange={(e) => updateSiteSettings({ appDownloadUrl: e.target.value })}
-                        placeholder="যেমন: https://example.com/oneroof-app.apk অথবা ড্রাইভ লিংক"
+                        placeholder="যেমন: https://example.com/oneroof-mart-app.apk অথবা ড্রাইভ লিংক"
                         className="w-full pl-3 pr-24 py-2.5 bg-slate-800 border border-slate-600 rounded-xl text-white font-mono text-xs outline-none focus:border-emerald-400"
                       />
                       {siteSettings.appDownloadUrl?.trim() && (
@@ -1670,7 +1670,7 @@ export const AdminPage: React.FC = () => {
                         type="text"
                         value={siteSettings.appNameBn || ''}
                         onChange={(e) => updateSiteSettings({ appNameBn: e.target.value })}
-                        placeholder="যেমন: OneRoof মোবাইল অ্যাপ"
+                        placeholder="যেমন: OneRoof Mart মোবাইল অ্যাপ"
                         className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-400"
                       />
                     </div>
@@ -2224,7 +2224,7 @@ export const AdminPage: React.FC = () => {
                       <span>Supabase ক্লাউড ডাটাবেজ ইন্টিগ্রেশন</span>
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      প্রজেক্ট: <strong className="text-white font-mono">oneroof</strong> | আইডি: <span className="font-mono text-emerald-400">{supabaseUrl.replace('https://', '').split('.')[0]}</span>
+                      প্রজেক্ট: <strong className="text-white font-mono">OneRoof Mart</strong> | আইডি: <span className="font-mono text-emerald-400">{supabaseUrl.replace('https://', '').split('.')[0]}</span> | অঞ্চল: <span className="font-mono text-slate-300">ap-southeast-1</span>
                     </p>
                   </div>
                 </div>
@@ -2303,26 +2303,37 @@ export const AdminPage: React.FC = () => {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(supabaseSetupSql);
-                    setSqlCopied(true);
-                    addToast('SQL কোড কপি করা হয়েছে! Supabase SQL Editor এ পেস্ট করুন।', 'success');
-                    setTimeout(() => setSqlCopied(false), 3000);
-                  }}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-95 shrink-0"
-                >
-                  {sqlCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  <span>{sqlCopied ? 'কপি সম্পন্ন!' : 'SQL কোড কপি করুন'}</span>
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href="https://supabase.com/dashboard/project/ppwaosjmbdyocrmhnwak/sql/new"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-xs"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>SQL Editor খুলুন</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(supabaseSetupSql);
+                      setSqlCopied(true);
+                      addToast('SQL কোড কপি করা হয়েছে! Supabase SQL Editor এ পেস্ট করুন।', 'success');
+                      setTimeout(() => setSqlCopied(false), 3000);
+                    }}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-95"
+                  >
+                    {sqlCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <span>{sqlCopied ? 'কপি সম্পন্ন!' : 'SQL কোড কপি করুন'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Instructions steps */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-300">
                 <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
                   <span className="font-bold text-amber-400 block mb-1">ধাপ 1:</span>
-                  <span>Supabase ড্যাশবোর্ডে গিয়ে আপনার <strong>OneRoof</strong> প্রজেক্ট ওপেন করুন।</span>
+                  <span>Supabase ড্যাশবোর্ডে গিয়ে আপনার <strong>OneRoof Mart</strong> প্রজেক্ট ওপেন করুন।</span>
                 </div>
                 <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
                   <span className="font-bold text-amber-400 block mb-1">ধাপ 2:</span>
@@ -2351,6 +2362,8 @@ export const AdminPage: React.FC = () => {
             addMultipleProducts={addMultipleProducts}
             addProduct={addProduct}
             formatPrice={formatPrice}
+            categories={categories}
+            addCategory={addCategory}
           />
         )}
       </div>

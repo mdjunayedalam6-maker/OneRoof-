@@ -51,35 +51,33 @@ export const CategoryGrid: React.FC = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3">
+      <div className="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-10 xl:grid-cols-12 gap-2">
         {categories.map((cat) => {
           const IconComponent = ICON_MAP[cat.iconName] || ShoppingBag;
           return (
             <div
               key={cat.id}
               onClick={() => openCategory(cat.id)}
-              className="bg-white rounded-xl p-2 sm:p-3 border border-slate-200/80 hover:border-emerald-500 hover:shadow-md transition-all duration-300 text-center cursor-pointer group flex flex-col items-center justify-between"
+              className="bg-white rounded-lg p-1.5 border border-emerald-100 hover:border-emerald-400 hover:shadow-sm transition-all duration-300 text-center cursor-pointer group flex flex-col items-center justify-between"
             >
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden mb-2 bg-emerald-50 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden mb-1.5 bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center group-hover:scale-105 transition-transform duration-300 shadow-inner">
                 <img
                   src={cat.image}
                   alt={cat.nameBn}
-                  className="w-full h-full object-cover group-hover:opacity-75 transition-opacity"
+                  className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=200&auto=format&fit=crop&q=80';
+                  }}
                 />
-                <div className="absolute inset-0 bg-emerald-950/20 group-hover:bg-emerald-950/40 transition-colors flex items-center justify-center">
+                <div className="absolute inset-0 bg-emerald-950/20 group-hover:bg-emerald-950/30 transition-colors flex items-center justify-center">
                   <IconComponent className="w-5 h-5 text-white drop-shadow-md" />
                 </div>
               </div>
 
-              <h3 className="text-[11px] font-bold text-slate-800 group-hover:text-emerald-700 transition-colors line-clamp-1">
+              <h3 className="text-[9px] font-bold text-slate-800 group-hover:text-emerald-700 transition-colors line-clamp-1 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100 mt-1">
                 {language === 'bn' ? cat.nameBn : cat.nameEn}
               </h3>
-
-              <span className="text-[9px] font-medium text-slate-500 group-hover:text-emerald-700 transition-colors mt-0.5">
-                {language === 'bn' 
-                  ? `${toBengaliNumber(cat.itemCount)}টি পণ্য` 
-                  : `${cat.itemCount} ${cat.itemCount === 1 ? 'Item' : 'Items'}`}
-              </span>
             </div>
           );
         })}

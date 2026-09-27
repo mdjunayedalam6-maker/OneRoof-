@@ -186,9 +186,9 @@ export const Navbar: React.FC = () => {
         {/* Right side Promo Pill */}
         <div className="flex items-center gap-2 text-xs text-amber-300 font-semibold bg-slate-900/60 py-1.5 px-3 rounded-full border border-amber-500/20">
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>{language === 'bn' ? 'ঈদ স্পেশাল ক্যাশব্যাক কোড: ' : 'Use Coupon Code: '}</span>
+          <span>{language === 'bn' ? '১০% ডিসকাউন্ট কুপন: ' : '10% Off Code: '}</span>
           <span className="bg-amber-400 text-slate-950 px-2 py-0.5 rounded font-black tracking-wider text-[11px]">
-            ONEROOF10
+            ONEROOFMART10
           </span>
         </div>
       </div>

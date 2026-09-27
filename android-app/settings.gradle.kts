@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "OneRoof"
+rootProject.name = "OneRoof Mart"
 include(":app")

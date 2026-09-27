@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oneroof-pwa-v1';
+const CACHE_NAME = 'oneroof-pwa-v3';
 const PRECACHE_URLS = [
   '/',
   '/index.html',

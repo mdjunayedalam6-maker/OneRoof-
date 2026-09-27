@@ -25,7 +25,7 @@ object MockData {
         whatsappLink = "https://wa.me/1234567890",
         facebookLink = "https://facebook.com",
         messengerLink = "https://m.me/yourpage",
-        appNameBn = "OneRoof মোবাইল অ্যাপ",
+        appNameBn = "OneRoof Mart মোবাইল অ্যাপ",
         appSubtitleBn = "সহজ ও দ্রুত কেনাকাটায় সরাসরি ডাউনলোড ও ইনস্টল করুন"
     )
 
