@@ -184,8 +184,8 @@ export const Footer: React.FC = () => {
               <div className="pt-3 pb-1 w-full max-w-lg">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3.5 p-3.5 px-4 sm:px-5 bg-gradient-to-r from-slate-900/90 via-blue-950/60 to-slate-900/90 border border-blue-500/40 rounded-2xl shadow-xl shadow-blue-950/30">
                   <div className="flex items-center gap-3 text-center sm:text-left">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 p-1">
-                      <img src="/pwa-192x192.png" alt="OneRoof Mart" className="w-full h-full object-contain rounded-lg" />
+                    <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md flex items-center justify-center shrink-0">
+                      <img src="/pwa-192x192.png" alt="OneRoof Mart" className="w-full h-full object-cover rounded-xl" />
                     </div>
                     <div>
                       <div className="text-xs font-black text-white flex items-center justify-center sm:justify-start gap-2">

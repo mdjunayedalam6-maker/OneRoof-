@@ -222,7 +222,7 @@ export const MobileDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = 
         ) : (!isInstalled && (isInstallable || isIOS)) && (
           <div className="p-3 bg-gradient-to-r from-[#003580] to-[#002860] text-white flex items-center justify-between gap-2 shadow-inner">
             <div className="flex items-center gap-2.5 min-w-0">
-              <img src="/pwa-192x192.png" alt="OneRoof Mart" className="w-8 h-8 rounded-lg bg-white p-0.5 object-contain shrink-0" />
+              <img src="/pwa-192x192.png" alt="OneRoof Mart" className="w-8 h-8 rounded-lg object-cover shrink-0 shadow-xs" />
               <div className="min-w-0">
                 <div className="text-xs font-bold truncate">
                   {language === 'bn' ? 'OneRoof Mart মোবাইল অ্যাপ' : 'OneRoof Mart Mobile App'}

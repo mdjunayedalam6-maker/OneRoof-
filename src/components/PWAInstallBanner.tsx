@@ -48,11 +48,11 @@ export const PWAInstallBanner: React.FC = () => {
         <div className="bg-white/95 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 shadow-[0_10px_35px_rgba(0,56,130,0.18)] border border-slate-200/90 flex items-center justify-between gap-3">
           {/* Logo & Info */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-12 h-12 shrink-0 rounded-xl overflow-hidden bg-white p-1 border border-slate-100 shadow-xs">
+            <div className="w-12 h-12 shrink-0 rounded-2xl overflow-hidden shadow-sm">
               <img
                 src="/pwa-192x192.png"
                 alt="OneRoof Mart App Logo"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover rounded-2xl"
               />
             </div>
             <div className="min-w-0">
@@ -98,7 +98,7 @@ export const PWAInstallBanner: React.FC = () => {
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <img src="/pwa-192x192.png" alt="OneRoof Mart" className="w-9 h-9 rounded-xl object-contain border p-0.5" />
+                <img src="/pwa-192x192.png" alt="OneRoof Mart" className="w-10 h-10 rounded-xl object-cover shadow-xs" />
                 <h3 className="text-base font-bold text-slate-900">
                   {language === 'bn' ? 'iPhone / iPad-এ অ্যাপ ইনস্টল' : 'Install on iPhone / iPad'}
                 </h3>

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const srcLogo = path.join(__dirname, 'src/assets/images/oneroof_logo_v3.png');
+const srcLogo = path.join(__dirname, 'public/app-icon-512.png');
 
 if (!fs.existsSync(srcLogo)) {
   console.error('Source logo does not exist:', srcLogo);
