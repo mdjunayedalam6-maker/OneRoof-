@@ -106,6 +106,17 @@ export const AdminPage: React.FC = () => {
   // Category Edit state
   const [categoryToEdit, setCategoryToEdit] = useState<Category | null>(null);
   const [editCatNameBn, setEditCatNameBn] = useState('');
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (url: string) => void) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setter(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const [editCatNameEn, setEditCatNameEn] = useState('');
   const [editCatSlug, setEditCatSlug] = useState('');
   const [editCatImage, setEditCatImage] = useState('');
@@ -1208,6 +1219,13 @@ export const AdminPage: React.FC = () => {
                     value={newCatImage}
                     onChange={(e) => setNewCatImage(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-amber-400"
+                    placeholder="URL দিন অথবা ফাইল সিলেক্ট করুন"
+                  />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, setNewCatImage)}
+                    className="w-full mt-2 text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400 cursor-pointer"
                   />
                 </div>
 
@@ -2442,6 +2460,13 @@ export const AdminPage: React.FC = () => {
                   value={editCatImage}
                   onChange={(e) => setEditCatImage(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400"
+                  placeholder="URL দিন অথবা ফাইল সিলেক্ট করুন"
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, setEditCatImage)}
+                  className="w-full mt-2 text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer"
                 />
               </div>
 
