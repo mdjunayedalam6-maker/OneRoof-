@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Filter, 
   Grid, 
@@ -15,6 +15,7 @@ import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
 import { CategorySlimBanner } from '../components/CategorySlimBanner';
 import { toBengaliNumber } from '../utils/translations';
+import { isProductInCategory } from '../utils/categoryMatcher';
 
 export const ShopPage: React.FC = () => {
   const {
@@ -32,6 +33,15 @@ export const ShopPage: React.FC = () => {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+  // Smooth scroll to top when category or subcategory is clicked
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (_) {}
+  }, [filterState.category, filterState.subcategory]);
+
   // Extract all unique brands
   const allBrands = useMemo(() => {
     const brandsSet = new Set<string>();
@@ -42,14 +52,11 @@ export const ShopPage: React.FC = () => {
   // Filter & Sort logic
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      // Category filter
-      if (filterState.category !== 'all' && p.category !== filterState.category) {
+      // Category & Subcategory filter using central category matcher
+      if (!isProductInCategory(p, filterState.category, filterState.subcategory, categories)) {
         return false;
       }
-      // Subcategory filter
-      if (filterState.subcategory && filterState.subcategory !== 'all' && p.subcategory !== filterState.subcategory) {
-        return false;
-      }
+
       // Price range
       if (p.price < filterState.minPrice || p.price > filterState.maxPrice) {
         return false;
@@ -98,7 +105,7 @@ export const ShopPage: React.FC = () => {
       }
       return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
     });
-  }, [products, filterState, language]);
+  }, [products, filterState, categories, language]);
 
   const handleCategorySelect = (slug: string) => {
     setFilterState((prev) => ({ ...prev, category: slug, subcategory: 'all' }));
@@ -187,25 +194,64 @@ export const ShopPage: React.FC = () => {
                     {filterState.category === 'all' && <Check className="w-3.5 h-3.5 text-emerald-600" />}
                   </div>
                 </button>
-                {categories.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => handleCategorySelect(c.id)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors ${
-                      filterState.category === c.id
-                        ? 'bg-emerald-50 text-emerald-800'
-                        : 'text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span>{language === 'bn' ? c.nameBn : c.nameEn}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-mono">
-                        {language === 'bn' ? toBengaliNumber(c.itemCount) : c.itemCount}
-                      </span>
-                      {filterState.category === c.id && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                {categories.map((c) => {
+                  const isSelected = filterState.category === c.id;
+                  return (
+                    <div key={c.id} className="space-y-1">
+                      <button
+                        onClick={() => handleCategorySelect(c.id)}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-50 text-emerald-800'
+                            : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>{language === 'bn' ? c.nameBn : c.nameEn}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-mono">
+                            {language === 'bn' ? toBengaliNumber(c.itemCount) : c.itemCount}
+                          </span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                        </div>
+                      </button>
+
+                      {/* If selected on desktop, show subcategories indented */}
+                      {isSelected && c.subcategories && c.subcategories.length > 0 && (
+                        <div className="pl-3 space-y-0.5 border-l-2 border-emerald-300 ml-2 py-0.5 animate-in fade-in duration-150">
+                          <button
+                            onClick={() => setFilterState((prev) => ({ ...prev, subcategory: 'all' }))}
+                            className={`w-full text-left px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                              filterState.subcategory === 'all'
+                                ? 'text-emerald-700 font-bold bg-emerald-50/80'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            • {language === 'bn' ? 'সকল আইটেম' : 'All Items'}
+                          </button>
+                          {c.subcategories.map((sub) => {
+                            const isSubSelected = 
+                              filterState.subcategory === sub.id || 
+                              filterState.subcategory.toLowerCase() === sub.nameBn.toLowerCase();
+
+                            return (
+                              <button
+                                key={sub.id}
+                                onClick={() => setFilterState((prev) => ({ ...prev, subcategory: sub.id }))}
+                                className={`w-full text-left px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                                  isSubSelected
+                                    ? 'text-emerald-700 font-bold bg-emerald-50/80'
+                                    : 'text-slate-500 hover:text-slate-800'
+                                }`}
+                              >
+                                • {language === 'bn' ? sub.nameBn : sub.nameEn}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -530,23 +576,67 @@ export const ShopPage: React.FC = () => {
                       {language === 'bn' ? toBengaliNumber(products.length) : products.length}
                     </span>
                   </button>
-                  {categories.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => {
-                        handleCategorySelect(c.id);
-                        setIsMobileFilterOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-2 py-1 text-xs font-medium rounded ${
-                        filterState.category === c.id ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-700'
-                      }`}
-                    >
-                      <span>{language === 'bn' ? c.nameBn : c.nameEn}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {language === 'bn' ? toBengaliNumber(c.itemCount) : c.itemCount}
-                      </span>
-                    </button>
-                  ))}
+                  {categories.map((c) => {
+                    const isSelected = filterState.category === c.id;
+                    return (
+                      <div key={c.id} className="space-y-0.5">
+                        <button
+                          onClick={() => {
+                            handleCategorySelect(c.id);
+                          }}
+                          className={`w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold rounded ${
+                            isSelected ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-700'
+                          }`}
+                        >
+                          <span>{language === 'bn' ? c.nameBn : c.nameEn}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {language === 'bn' ? toBengaliNumber(c.itemCount) : c.itemCount}
+                          </span>
+                        </button>
+
+                        {/* Indented subcategories if category is selected in mobile drawer */}
+                        {isSelected && c.subcategories && c.subcategories.length > 0 && (
+                          <div className="pl-3 space-y-0.5 border-l-2 border-emerald-300 ml-2 py-0.5">
+                            <button
+                              onClick={() => {
+                                setFilterState((prev) => ({ ...prev, subcategory: 'all' }));
+                                setIsMobileFilterOpen(false);
+                              }}
+                              className={`w-full text-left px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                                filterState.subcategory === 'all'
+                                  ? 'text-emerald-700 font-bold bg-emerald-50/80'
+                                  : 'text-slate-500 hover:text-slate-800'
+                              }`}
+                            >
+                              • {language === 'bn' ? 'সকল আইটেম' : 'All Items'}
+                            </button>
+                            {c.subcategories.map((sub) => {
+                              const isSubSelected = 
+                                filterState.subcategory === sub.id || 
+                                filterState.subcategory.toLowerCase() === sub.nameBn.toLowerCase();
+
+                              return (
+                                <button
+                                  key={sub.id}
+                                  onClick={() => {
+                                    setFilterState((prev) => ({ ...prev, subcategory: sub.id }));
+                                    setIsMobileFilterOpen(false);
+                                  }}
+                                  className={`w-full text-left px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                                    isSubSelected
+                                      ? 'text-emerald-700 font-bold bg-emerald-50/80'
+                                      : 'text-slate-500 hover:text-slate-800'
+                                  }`}
+                                >
+                                  • {language === 'bn' ? sub.nameBn : sub.nameEn}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

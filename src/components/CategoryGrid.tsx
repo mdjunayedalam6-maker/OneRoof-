@@ -8,6 +8,11 @@ import {
   BookOpen, 
   Activity, 
   Smile, 
+  Heart,
+  Gem,
+  Snowflake,
+  Calendar,
+  Grid,
   ArrowRight 
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -21,6 +26,11 @@ const ICON_MAP: Record<string, any> = {
   BookOpen,
   Activity,
   Smile,
+  Heart,
+  Gem,
+  Snowflake,
+  Calendar,
+  Grid,
 };
 
 export const CategoryGrid: React.FC = () => {
@@ -31,16 +41,16 @@ export const CategoryGrid: React.FC = () => {
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div>
           <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-            <span>{language === 'bn' ? 'ক্যাটাগরি সমূহ' : 'Featured Categories'}</span>
+            <span>{language === 'bn' ? 'প্রধান ক্যাটাগরি সমূহ' : 'Main Categories'}</span>
           </h2>
           <p className="text-[11px] sm:text-xs text-slate-500">
-            {language === 'bn' ? 'আপনার প্রয়োজনীয় পণ্য বেছে নিন' : 'Explore products by category'}
+            {language === 'bn' ? 'পছন্দের ক্যাটাগরি বেছে নিয়ে পণ্য দেখুন' : 'Explore products by categories'}
           </p>
         </div>
 
         <button
           onClick={() => {
-            setFilterState((prev) => ({ ...prev, category: 'all', searchQuery: '' }));
+            setFilterState((prev) => ({ ...prev, category: 'all', subcategory: 'all', searchQuery: '' }));
             setCurrentPage('shop');
           }}
           className="text-xs sm:text-sm font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 group active:scale-95 transition-all"
@@ -50,8 +60,8 @@ export const CategoryGrid: React.FC = () => {
         </button>
       </div>
 
-      {/* 4 columns on mobile as requested, compact & clear typography */}
-      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2 sm:gap-2.5">
+      {/* 4 columns on mobile, 6 on tablet, 11 on desktop */}
+      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-11 gap-2 sm:gap-2.5">
         {categories.map((cat) => {
           const IconComponent = ICON_MAP[cat.iconName] || ShoppingBag;
           const displayName = language === 'bn' ? cat.nameBn : cat.nameEn;

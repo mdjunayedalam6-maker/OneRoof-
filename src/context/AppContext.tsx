@@ -48,6 +48,7 @@ import {
 import { safeLocalStorage, safeSessionStorage } from '../utils/safeStorage';
 import { idbGet, idbSet } from '../utils/idbStorage';
 import { getShopBaseCategoryMetadata } from '../services/shopbaseService';
+import { calculateCategoryCounts } from '../utils/categoryMatcher';
 
 interface Toast {
   id: string;
@@ -240,15 +241,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const saved = safeLocalStorage.getItem('oneroof_products');
-      if (saved) {
+      if (saved !== null) {
         const parsed: Product[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const cleanParsed = deduplicateProducts(parsed);
-          const existingIds = new Set(cleanParsed.map((p) => p.id));
-          const missingShopBase = INITIAL_PRODUCTS.filter((p) => !existingIds.has(p.id));
-          const merged = deduplicateProducts([...missingShopBase, ...cleanParsed]);
-          safeLocalStorage.setItem('oneroof_products', JSON.stringify(merged));
-          return merged;
+        if (Array.isArray(parsed)) {
+          return deduplicateProducts(parsed);
         }
       }
       const initialClean = deduplicateProducts(INITIAL_PRODUCTS);
@@ -259,26 +255,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  // Persistent Categories
+  // Strict 11 Main Category IDs in requested display order
+  const MAIN_11_ORDER = [
+    'womens-clothing',
+    'mens-clothing',
+    'baby-collection',
+    'couple-combo',
+    'home-living',
+    'bag-collection',
+    'jewelry-accessories',
+    'electronics-gadgets',
+    'winter-collection',
+    'seasonal-products',
+    'other-categories',
+  ];
+
+  const sanitizeCategories = (cats: Category[]): Category[] => {
+    if (!Array.isArray(cats) || cats.length === 0) return CATEGORIES;
+    // Keep only the 11 main categories
+    const valid = cats.filter((c) => MAIN_11_ORDER.includes(c.id));
+    if (valid.length !== 11) {
+      const map = new Map(valid.map((c) => [c.id, c]));
+      return CATEGORIES.map((def) => map.get(def.id) || def);
+    }
+    // Sort strictly in the 11 main categories order
+    return valid.sort((a, b) => MAIN_11_ORDER.indexOf(a.id) - MAIN_11_ORDER.indexOf(b.id));
+  };
+
+  // Persistent Categories (guaranteed strictly 11 main categories)
   const [categories, setCategories] = useState<Category[]>(() => {
     try {
-      const saved = safeLocalStorage.getItem('oneroof_categories');
-      if (saved) {
-        const parsed: Category[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const existingIds = new Set(parsed.map((c) => (c.id || '').trim().toLowerCase()));
-          const missingDefaults = CATEGORIES.filter(
-            (c) => !existingIds.has((c.id || '').trim().toLowerCase())
-          );
-          if (missingDefaults.length > 0) {
-            const merged = [...parsed, ...missingDefaults];
-            safeLocalStorage.setItem('oneroof_categories', JSON.stringify(merged));
-            return merged;
+      const version = safeLocalStorage.getItem('oneroof_cat_schema_version');
+      if (version === 'v5_11_main_categories_strict') {
+        const saved = safeLocalStorage.getItem('oneroof_categories');
+        if (saved !== null) {
+          const parsed: Category[] = JSON.parse(saved);
+          const sanitized = sanitizeCategories(parsed);
+          if (sanitized.length === 11) {
+            return sanitized;
           }
-          return parsed;
         }
       }
+      // Force migration to clean 11 structured categories
+      safeLocalStorage.setItem('oneroof_cat_schema_version', 'v5_11_main_categories_strict');
       safeLocalStorage.setItem('oneroof_categories', JSON.stringify(CATEGORIES));
+      idbSet('oneroof_cached_categories', CATEGORIES).catch(() => {});
+      syncCategoriesToSupabase(CATEGORIES).catch(() => {});
       return CATEGORIES;
     } catch {
       return CATEGORIES;
@@ -287,22 +309,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Dynamic Categories: item counts are automatically and accurately synchronized with the real products in the catalog
   const dynamicCategories = useMemo<Category[]>(() => {
-    return categories.map((cat) => {
-      const catId = (cat.id || '').trim().toLowerCase();
-      const catSlug = (cat.slug || '').trim().toLowerCase();
-      const catBn = (cat.nameBn || '').trim().toLowerCase();
-      const count = products.filter((p) => {
-        if (!p.category && !p.subcategory) return false;
-        const pCat = (p.category || '').trim().toLowerCase();
-        const pSub = (p.subcategory || '').trim().toLowerCase();
-        return pCat === catId || pCat === catSlug || (pSub && pSub === catBn);
-      }).length;
-
-      return {
-        ...cat,
-        itemCount: count > 0 ? count : (cat.itemCount || 10),
-      };
-    });
+    return calculateCategoryCounts(categories, products);
   }, [categories, products]);
 
   // Persistent Site Settings
@@ -319,9 +326,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [bannerSlides, setBannerSlides] = useState<AdminBannerSlide[]>(() => {
     try {
       const saved = safeLocalStorage.getItem('oneroof_banner_slides');
-      if (saved) {
+      if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= 5) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
         }
       }
@@ -488,18 +495,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .then(([cachedProducts, cachedCategories, cachedSlides]) => {
         if (!isMounted) return;
         if (cachedProducts && Array.isArray(cachedProducts) && cachedProducts.length > 0) {
-          setProducts((prev) => {
-            const cleanCached = deduplicateProducts(cachedProducts);
-            const base = prev.length === 0 ? cleanCached : prev;
-            return deduplicateProducts([...base, ...cleanCached]);
-          });
+          const cleanCached = deduplicateProducts(cachedProducts);
+          setProducts(cleanCached);
           setIsProductsLoading(false);
         }
         if (cachedCategories && Array.isArray(cachedCategories) && cachedCategories.length > 0) {
-          setCategories((prev) => (prev.length === 0 ? cachedCategories : prev));
+          const cleanCats = sanitizeCategories(cachedCategories);
+          setCategories(cleanCats);
+          idbSet('oneroof_cached_categories', cleanCats).catch(() => {});
+          safeLocalStorage.setItem('oneroof_categories', JSON.stringify(cleanCats));
         }
         if (cachedSlides && Array.isArray(cachedSlides) && cachedSlides.length > 0) {
-          setBannerSlides((prev) => (prev.length <= 5 ? cachedSlides : prev));
+          setBannerSlides(cachedSlides);
         }
       })
       .catch(() => {});
@@ -545,24 +552,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ]);
 
         if (isMounted) {
-          if (remoteProducts && remoteProducts.length > 0) {
+          if (remoteProducts && Array.isArray(remoteProducts) && remoteProducts.length > 0) {
             const cleanRemote = deduplicateProducts(remoteProducts);
-            setProducts((prev) => deduplicateProducts([...cleanRemote, ...prev]));
+            setProducts(cleanRemote);
+            safeLocalStorage.setItem('oneroof_products', JSON.stringify(cleanRemote));
             idbSet('oneroof_cached_products', cleanRemote).catch(() => {});
           }
           if (remoteOrders && remoteOrders.length > 0) setOrders(remoteOrders);
-          if (remoteSettings) setSiteSettings(remoteSettings);
-          if (remoteCategories && remoteCategories.length > 0) {
-            setCategories((prev) => {
-              const remoteIds = new Set(remoteCategories.map((c) => (c.id || '').trim().toLowerCase()));
-              const missingDefaults = prev.filter((c) => !remoteIds.has((c.id || '').trim().toLowerCase()));
-              const merged = [...remoteCategories, ...missingDefaults];
-              idbSet('oneroof_cached_categories', merged).catch(() => {});
-              return merged;
-            });
+          if (remoteSettings) {
+            setSiteSettings(remoteSettings);
+            safeLocalStorage.setItem('oneroof_site_settings', JSON.stringify(remoteSettings));
           }
-          if (remoteSlides && remoteSlides.length > 0) {
+          if (remoteCategories && Array.isArray(remoteCategories) && remoteCategories.length > 0) {
+            const cleanCats = sanitizeCategories(remoteCategories);
+            setCategories(cleanCats);
+            safeLocalStorage.setItem('oneroof_categories', JSON.stringify(cleanCats));
+            idbSet('oneroof_cached_categories', cleanCats).catch(() => {});
+          } else {
+            syncCategoriesToSupabase(CATEGORIES).catch(() => {});
+          }
+          if (remoteSlides && Array.isArray(remoteSlides) && remoteSlides.length > 0) {
             setBannerSlides(remoteSlides);
+            safeLocalStorage.setItem('oneroof_banner_slides', JSON.stringify(remoteSlides));
             idbSet('oneroof_cached_slides', remoteSlides).catch(() => {});
           }
           if (remoteUsers && remoteUsers.length > 0) setUsers(remoteUsers);
@@ -648,6 +659,70 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 } else if (payload.eventType === 'DELETE' && payload.old?.id) {
                   const deletedId = payload.old.id;
                   setOrders((prev) => prev.filter((o) => o.id !== deletedId));
+                }
+              }
+            )
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'products' },
+              (payload) => {
+                if (!isMounted) return;
+                if (payload.eventType === 'INSERT' && payload.new?.data) {
+                  const newProduct = payload.new.data as Product;
+                  setProducts((prev) => {
+                    const next = deduplicateProducts([newProduct, ...prev]);
+                    safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
+                    idbSet('oneroof_cached_products', next).catch(() => {});
+                    return next;
+                  });
+                } else if (payload.eventType === 'UPDATE' && payload.new?.data) {
+                  const updatedProduct = payload.new.data as Product;
+                  setProducts((prev) => {
+                    const next = prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
+                    safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
+                    idbSet('oneroof_cached_products', next).catch(() => {});
+                    return next;
+                  });
+                } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+                  const deletedId = payload.old.id;
+                  setProducts((prev) => {
+                    const next = prev.filter((p) => p.id !== deletedId);
+                    safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
+                    idbSet('oneroof_cached_products', next).catch(() => {});
+                    return next;
+                  });
+                }
+              }
+            )
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'categories' },
+              (payload) => {
+                if (!isMounted) return;
+                if (payload.eventType === 'INSERT' && payload.new?.data) {
+                  const newCat = payload.new.data as Category;
+                  setCategories((prev) => {
+                    const next = prev.some((c) => c.id === newCat.id) ? prev : [...prev, newCat];
+                    safeLocalStorage.setItem('oneroof_categories', JSON.stringify(next));
+                    idbSet('oneroof_cached_categories', next).catch(() => {});
+                    return next;
+                  });
+                } else if (payload.eventType === 'UPDATE' && payload.new?.data) {
+                  const updatedCat = payload.new.data as Category;
+                  setCategories((prev) => {
+                    const next = prev.map((c) => (c.id === updatedCat.id ? updatedCat : c));
+                    safeLocalStorage.setItem('oneroof_categories', JSON.stringify(next));
+                    idbSet('oneroof_cached_categories', next).catch(() => {});
+                    return next;
+                  });
+                } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+                  const deletedId = payload.old.id;
+                  setCategories((prev) => {
+                    const next = prev.filter((c) => c.id !== deletedId);
+                    safeLocalStorage.setItem('oneroof_categories', JSON.stringify(next));
+                    idbSet('oneroof_cached_categories', next).catch(() => {});
+                    return next;
+                  });
                 }
               }
             );
@@ -737,16 +812,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     safeLocalStorage.setItem('oneroof_products', JSON.stringify(products));
-    if (products.length > 0) {
-      idbSet('oneroof_cached_products', products).catch(() => {});
-    }
+    idbSet('oneroof_cached_products', products).catch(() => {});
   }, [products]);
 
   useEffect(() => {
     safeLocalStorage.setItem('oneroof_categories', JSON.stringify(categories));
-    if (categories.length > 0) {
-      idbSet('oneroof_cached_categories', categories).catch(() => {});
-    }
+    idbSet('oneroof_cached_categories', categories).catch(() => {});
   }, [categories]);
 
   useEffect(() => {
@@ -771,9 +842,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     safeLocalStorage.setItem('oneroof_banner_slides', JSON.stringify(bannerSlides));
-    if (bannerSlides.length > 0) {
-      idbSet('oneroof_cached_slides', bannerSlides).catch(() => {});
-    }
+    idbSet('oneroof_cached_slides', bannerSlides).catch(() => {});
   }, [bannerSlides]);
 
   // Apply dynamic theme colors and layout style to :root across the entire website
@@ -1097,6 +1166,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const resetCategoriesToDefault = () => {
     setCategories(CATEGORIES);
     safeLocalStorage.setItem('oneroof_categories', JSON.stringify(CATEGORIES));
+    idbSet('oneroof_cached_categories', CATEGORIES).catch(() => {});
     syncCategoriesToSupabase(CATEGORIES);
     addToast(language === 'bn' ? 'ডিফল্ট ক্যাটাগরিগুলো রিস্টোর করা হয়েছে' : 'Default categories restored', 'info');
   };
@@ -1209,7 +1279,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const openCategory = (catSlug: string) => {
-    setFilterState((prev) => ({ ...prev, category: catSlug, searchQuery: '' }));
+    setFilterState((prev) => ({ 
+      ...prev, 
+      category: catSlug, 
+      subcategory: 'all', 
+      searchQuery: '' 
+    }));
     setCurrentPage('shop');
   };
 
