@@ -148,6 +148,8 @@ export const AdminPage: React.FC = () => {
   const [editSlideTargetCat, setEditSlideTargetCat] = useState('fashion');
   const [isUploadingNewBanner, setIsUploadingNewBanner] = useState(false);
   const [isUploadingEditBanner, setIsUploadingEditBanner] = useState(false);
+  const [newSlideShowText, setNewSlideShowText] = useState(false);
+  const [editSlideShowText, setEditSlideShowText] = useState(false);
 
   const handleBannerImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -380,26 +382,33 @@ export const AdminPage: React.FC = () => {
 
   const openEditBanner = (slide: AdminBannerSlide) => {
     setBannerToEdit(slide);
-    setEditSlideTitleBn(slide.titleBn);
-    setEditSlideSubtitleBn(slide.subtitleBn);
+    setEditSlideTitleBn(slide.titleBn || '');
+    setEditSlideSubtitleBn(slide.subtitleBn || '');
     setEditSlideImage(slide.image);
-    setEditSlideBadge(slide.badgeBn);
-    setEditSlideDiscount(slide.discountTextBn);
+    setEditSlideBadge(slide.badgeBn || '');
+    setEditSlideDiscount(slide.discountTextBn || '');
     setEditSlideTargetCat(slide.categoryTarget || 'fashion');
+    setEditSlideShowText(Boolean(slide.showTextOverlay));
   };
 
   const handleUpdateBannerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!bannerToEdit) return;
+    if (!editSlideImage || !editSlideImage.trim()) {
+      addToast(language === 'bn' ? 'অনুগ্রহ করে ব্যানার ছবি দিন' : 'Please provide banner image', 'error');
+      return;
+    }
     updateBannerSlide(bannerToEdit.id, {
-      titleBn: editSlideTitleBn.trim() || bannerToEdit.titleBn,
-      subtitleBn: editSlideSubtitleBn.trim() || bannerToEdit.subtitleBn,
+      titleBn: editSlideTitleBn.trim() || bannerToEdit.titleBn || 'ব্যানার',
+      subtitleBn: editSlideShowText ? editSlideSubtitleBn.trim() : '',
       image: editSlideImage.trim() || bannerToEdit.image,
-      badgeBn: editSlideBadge.trim() || bannerToEdit.badgeBn,
-      discountTextBn: editSlideDiscount.trim() || bannerToEdit.discountTextBn,
+      badgeBn: editSlideShowText ? editSlideBadge.trim() : '',
+      discountTextBn: editSlideShowText ? editSlideDiscount.trim() : '',
       categoryTarget: editSlideTargetCat,
+      showTextOverlay: Boolean(editSlideShowText),
     });
     setBannerToEdit(null);
+    addToast(language === 'bn' ? 'ব্যানার স্লাইড সফলভাবে আপডেট হয়েছে!' : 'Banner updated successfully!', 'success');
   };
 
   const handleAddCategorySubmit = (e: React.FormEvent) => {
@@ -429,30 +438,36 @@ export const AdminPage: React.FC = () => {
 
   const handleAddBannerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSlideTitleBn.trim()) {
-      addToast('ব্যানার শিরোনাম লিখুন', 'error');
+    if (!newSlideImage || !newSlideImage.trim()) {
+      addToast(language === 'bn' ? 'অনুগ্রহ করে ফোনের গ্যালারি থেকে ছবি আপলোড বা লিংক দিন' : 'Please upload or provide banner image', 'error');
       return;
     }
     const newSlide: AdminBannerSlide = {
       id: 'slide-' + Date.now(),
-      badgeBn: newSlideBadge,
-      badgeEn: 'Special Offer',
-      titleBn: newSlideTitleBn,
-      titleEn: newSlideTitleEn || newSlideTitleBn,
-      subtitleBn: newSlideSubtitleBn || 'সেরা ডিল ও আকর্ষণীয় অফার।',
-      subtitleEn: 'Exclusive discounts and authentic products.',
-      discountTextBn: newSlideDiscount,
-      discountTextEn: 'Special Offer',
+      badgeBn: newSlideShowText ? newSlideBadge.trim() : '',
+      badgeEn: '',
+      titleBn: newSlideTitleBn.trim() || 'ব্যানার স্লাইড',
+      titleEn: newSlideTitleEn.trim() || newSlideTitleBn.trim() || 'Banner Slide',
+      subtitleBn: newSlideShowText ? newSlideSubtitleBn.trim() : '',
+      subtitleEn: '',
+      discountTextBn: newSlideShowText ? newSlideDiscount.trim() : '',
+      discountTextEn: '',
       btnTextBn: 'অফার দেখুন',
       btnTextEn: 'Shop Now',
-      categoryTarget: newSlideTargetCat,
-      image: newSlideImage,
+      categoryTarget: newSlideTargetCat || 'fashion',
+      image: newSlideImage.trim(),
       accentColor: 'from-amber-500 to-amber-600',
+      showTextOverlay: Boolean(newSlideShowText),
     };
     addBannerSlide(newSlide);
+    setNewSlideImage('');
     setNewSlideTitleBn('');
     setNewSlideTitleEn('');
     setNewSlideSubtitleBn('');
+    setNewSlideBadge('');
+    setNewSlideDiscount('');
+    setNewSlideShowText(false);
+    addToast(language === 'bn' ? 'নতুন ব্যানার স্লাইড সফলভাবে যোগ করা হয়েছে!' : 'New banner added successfully!', 'success');
   };
 
   const handleChangePin = (e: React.FormEvent) => {
@@ -2047,50 +2062,28 @@ export const AdminPage: React.FC = () => {
                 <span>নতুন হোমপেজ ব্যানার স্লাইড যোগ করুন</span>
               </h3>
 
-              <form onSubmit={handleAddBannerSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1">ব্যানার শিরোনাম (বাংলা) *</label>
-                  <input
-                    type="text"
-                    value={newSlideTitleBn}
-                    onChange={(e) => setNewSlideTitleBn(e.target.value)}
-                    placeholder="যেমন: ঈদ স্পেশাল মেগা সেল"
-                    required
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1">উপ-শিরোনাম বা অফার বিবরণ</label>
-                  <input
-                    type="text"
-                    value={newSlideSubtitleBn}
-                    onChange={(e) => setNewSlideSubtitleBn(e.target.value)}
-                    placeholder="যেমন: ফ্যাশন ও গ্যাজেটে 70% পর্যন্ত অভাবনীয় ছাড়"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-2 space-y-2 bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/60">
+              <form onSubmit={handleAddBannerSubmit} className="space-y-4 text-xs">
+                {/* 1. Primary: Banner Image Upload from Phone or URL */}
+                <div className="space-y-2 bg-slate-900/90 p-4 rounded-2xl border border-slate-700/80">
                   <div className="flex items-center justify-between">
-                    <label className="text-slate-300 font-bold flex items-center gap-1.5">
+                    <label className="text-slate-200 font-bold flex items-center gap-1.5 text-sm">
                       <ImageIcon className="w-4 h-4 text-amber-400" />
-                      <span>ব্যানার ছবি (ফোনের গ্যালারি বা ফাইল থেকে আপলোড) *</span>
+                      <span>ব্যানার ছবি (ফোনের ফাইল / গ্যালারি থেকে সরাসরি আপলোড) *</span>
                     </label>
                     {isUploadingNewBanner && (
-                      <span className="text-[11px] text-amber-400 animate-pulse flex items-center gap-1">
-                        <RotateCcw className="w-3 h-3 animate-spin" />
-                        <span>ছবি প্রসেস হচ্ছে...</span>
+                      <span className="text-xs text-amber-400 animate-pulse flex items-center gap-1 font-medium">
+                        <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                        <span>ছবি অপটিমাইজ হচ্ছে...</span>
                       </span>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-center pt-1">
                     {/* Device / Phone Gallery Upload Button */}
                     <div>
-                      <label className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl cursor-pointer shadow-md active:scale-98 transition-all">
-                        <Upload className="w-4 h-4" />
-                        <span>📁 ফোন / গ্যালারি থেকে ছবি আপলোড করুন</span>
+                      <label className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg shadow-amber-900/20 active:scale-98 transition-all text-xs sm:text-sm">
+                        <Upload className="w-5 h-5 text-slate-950 shrink-0" />
+                        <span>📁 ফোন / গ্যালারি থেকে ব্যানার ইমেজ বেছে নিন</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -2098,8 +2091,8 @@ export const AdminPage: React.FC = () => {
                           className="hidden"
                         />
                       </label>
-                      <p className="text-[10.5px] text-slate-400 mt-1.5">
-                        ফোনের ফটো লাইব্রেরি, ক্যামেরা বা ফাইল থেকে সরাসরি ব্যানার সিলেক্ট করুন।
+                      <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                        মোবাইল গ্যালারি বা কম্পিউটার থেকে সরাসরি আপনার ব্যানার সিলেক্ট করুন। সাইজ স্বয়ংক্রিয়ভাবে অপটিমাইজ হয়ে যাবে।
                       </p>
                     </div>
 
@@ -2109,19 +2102,19 @@ export const AdminPage: React.FC = () => {
                         type="text"
                         value={newSlideImage}
                         onChange={(e) => setNewSlideImage(e.target.value)}
-                        placeholder="অথবা সরাসরি ইমেজ লিংক (URL) দিন"
-                        className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-amber-400 text-xs"
+                        placeholder="অথবা সরাসরি ইমেজ লিংক (Image URL) দিন"
+                        className="w-full px-3.5 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-amber-400 text-xs"
                       />
-                      <p className="text-[10.5px] text-slate-500 mt-1.5">
-                        ইমেজ URL থাকলে সেটিও ব্যবহার করতে পারবেন।
+                      <p className="text-[11px] text-slate-500 mt-1.5">
+                        অনলাইন কোনো ছবির লিংক থাকলে এখানে পেস্ট করতে পারেন।
                       </p>
                     </div>
                   </div>
 
                   {/* Live Banner Preview Box */}
-                  {newSlideImage && (
-                    <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-700 bg-slate-950/80">
-                      <div className="aspect-[21/9] sm:aspect-[24/9] w-full max-h-48 overflow-hidden flex items-center justify-center">
+                  {newSlideImage ? (
+                    <div className="mt-3 relative rounded-xl overflow-hidden border border-slate-700 bg-slate-950">
+                      <div className="w-full h-36 sm:h-48 md:h-56 overflow-hidden flex items-center justify-center bg-slate-900">
                         <img
                           src={newSlideImage}
                           alt="Banner Preview"
@@ -2132,34 +2125,132 @@ export const AdminPage: React.FC = () => {
                           }}
                         />
                       </div>
-                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-[10px] font-bold text-amber-400 border border-amber-400/30">
-                        লাইভ ব্যানার প্রিভিউ (Live Preview)
+                      <div className="absolute top-2 left-2 px-2.5 py-1 rounded-md bg-black/80 backdrop-blur-xs text-[10px] font-bold text-amber-400 border border-amber-400/40 flex items-center gap-1.5">
+                        <Eye className="w-3 h-3 text-amber-400" />
+                        <span>লাইভ ব্যানার প্রিভিউ ({newSlideShowText ? 'লেখা সহ' : 'শুধু ব্যানার'})</span>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="mt-2 py-6 border-2 border-dashed border-slate-700 rounded-xl flex flex-col items-center justify-center text-slate-500 text-xs gap-1.5">
+                      <ImageIcon className="w-6 h-6 text-slate-600" />
+                      <span>উপরে গ্যালারি বা ফাইলে ক্লিক করে ছবি আপলোড করুন</span>
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1">টার্গেট ক্যাটাগরি</label>
-                  <select
-                    value={newSlideTargetCat}
-                    onChange={(e) => setNewSlideTargetCat(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none capitalize"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.slug}>
-                        {c.nameBn}
-                      </option>
-                    ))}
-                  </select>
+                {/* 2. Target Category */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-300 font-bold mb-1">টার্গেট ক্যাটাগরি (ব্যানারে ক্লিক করলে কোন ক্যাটাগরিতে যাবে)</label>
+                    <select
+                      value={newSlideTargetCat}
+                      onChange={(e) => setNewSlideTargetCat(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-amber-400 capitalize"
+                    >
+                      <option value="all">সকল পণ্য (All Products)</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.slug}>
+                          {c.nameBn} ({c.nameEn})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 3. Text Overlay Option Toggle */}
+                  <div className="flex flex-col justify-end">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-700">
+                      <div>
+                        <div className="text-white font-bold text-xs">ব্যানারের উপর লেখা/টাইটেল দেখাতে চান?</div>
+                        <div className="text-[10px] text-slate-400">
+                          {newSlideShowText ? 'লেখা প্রদর্শন চালু আছে' : 'বন্ধ (শুধুমাত্র আসল ব্যানার ছবি দেখা যাবে)'}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNewSlideShowText(!newSlideShowText)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                          newSlideShowText ? 'bg-amber-500' : 'bg-slate-700'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            newSlideShowText ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="sm:col-span-2 pt-2">
+                {/* Information Callout or Optional Text Fields */}
+                {!newSlideShowText ? (
+                  <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div>
+                      <strong className="block text-emerald-200 font-bold">শুধু ব্যানার প্রদর্শিত হবে (কোনো লেখা থাকবে না)</strong>
+                      <span className="text-[11px] text-emerald-400/90 leading-relaxed">
+                        ওয়েবসাইটে কোনো লেখা বা কালো আবছা আবরণ থাকবে না। শুধু আপনার আসল ব্যানারটি পরিষ্কার ও উজ্জ্বলভাবে দেখা যাবে।
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/30 space-y-3">
+                    <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>ব্যানারের উপর প্রদর্শনের জন্য লেখা (ঐচ্ছিক):</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block text-slate-400 font-bold mb-1">ব্যানার শিরোনাম (বাংলা)</label>
+                        <input
+                          type="text"
+                          value={newSlideTitleBn}
+                          onChange={(e) => setNewSlideTitleBn(e.target.value)}
+                          placeholder="যেমন: ঈদ স্পেশাল মেগা সেল"
+                          className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-amber-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-400 font-bold mb-1">উপ-শিরোনাম বা অফার বিবরণ</label>
+                        <input
+                          type="text"
+                          value={newSlideSubtitleBn}
+                          onChange={(e) => setNewSlideSubtitleBn(e.target.value)}
+                          placeholder="যেমন: সকল পণ্যে অভাবনীয় মূল্যছাড়!"
+                          className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-amber-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-400 font-bold mb-1">ব্যাজ টেক্সট</label>
+                        <input
+                          type="text"
+                          value={newSlideBadge}
+                          onChange={(e) => setNewSlideBadge(e.target.value)}
+                          placeholder="যেমন: বিশেষ অফার"
+                          className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-amber-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-400 font-bold mb-1">ডিসকাউন্ট বা ছাড় টেক্সট</label>
+                        <input
+                          type="text"
+                          value={newSlideDiscount}
+                          onChange={(e) => setNewSlideDiscount(e.target.value)}
+                          placeholder="যেমন: 50% পর্যন্ত ছাড়"
+                          className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-amber-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2">
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition-colors cursor-pointer"
+                    className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2"
                   >
-                    ব্যানার পাবলিশ করুন
+                    <Plus className="w-4 h-4" />
+                    <span>ব্যানার পাবলিশ করুন</span>
                   </button>
                 </div>
               </form>
@@ -2167,60 +2258,128 @@ export const AdminPage: React.FC = () => {
 
             {/* Existing Slides List */}
             <div className="space-y-3">
-              <h3 className="text-sm font-bold text-white">বর্তমান ব্যানার স্লাইডসমূহ ({bannerSlides.length})</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {bannerSlides.map((slide) => (
-                  <div
-                    key={slide.id}
-                    className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden text-xs flex flex-col justify-between"
-                  >
-                    <div className="h-32 relative overflow-hidden bg-slate-900">
-                      <img
-                        src={slide.image}
-                        alt={slide.titleBn}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-slate-900/80 text-amber-400 text-[10px] font-bold">
-                        {slide.badgeBn}
-                      </div>
-                    </div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-amber-400" />
+                  <span>বর্তমান ব্যানার স্লাইডসমূহ ({bannerSlides.length})</span>
+                </h3>
+                <span className="text-[11px] text-slate-400">
+                  সরাসরি বোতামে ক্লিক করে লেখা চালু বা বন্ধ করতে পারেন
+                </span>
+              </div>
 
-                    <div className="p-4 space-y-2">
-                      <div className="font-bold text-white text-sm">{slide.titleBn}</div>
-                      <div className="text-slate-400 text-[11px] line-clamp-1">{slide.subtitleBn}</div>
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-700">
-                        <span className="text-[10px] font-bold text-emerald-400">{slide.discountTextBn}</span>
-                        <div className="flex items-center gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {bannerSlides.map((slide) => {
+                  const hasText = Boolean(slide.showTextOverlay && (slide.titleBn || slide.badgeBn));
+
+                  return (
+                    <div
+                      key={slide.id}
+                      className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden text-xs flex flex-col justify-between shadow-md"
+                    >
+                      <div className="h-36 relative overflow-hidden bg-slate-950">
+                        <img
+                          src={slide.image}
+                          alt={slide.titleBn || 'Banner'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&auto=format&fit=crop&q=80';
+                          }}
+                        />
+                        {/* Display mode pill */}
+                        <div className="absolute top-2 left-2">
+                          {hasText ? (
+                            <span className="px-2.5 py-1 rounded-md bg-amber-500/90 text-slate-950 font-black text-[10px] shadow-sm flex items-center gap-1 backdrop-blur-xs">
+                              <Sparkles className="w-3 h-3" />
+                              <span>লেখা সহ (Text Active)</span>
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-md bg-emerald-600/90 text-white font-bold text-[10px] shadow-sm flex items-center gap-1 backdrop-blur-xs">
+                              <Check className="w-3 h-3" />
+                              <span>শুধু ব্যানার (Clean)</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {slide.badgeBn && hasText && (
+                          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-slate-900/80 text-amber-400 text-[10px] font-bold">
+                            {slide.badgeBn}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4 space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="font-bold text-white text-sm">
+                              {slide.titleBn || 'হোমপেজ ব্যানার'}
+                            </div>
+                            {slide.subtitleBn && hasText && (
+                              <div className="text-slate-400 text-[11px] line-clamp-1 mt-0.5">{slide.subtitleBn}</div>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-700">
+                            {slide.categoryTarget || 'all'}
+                          </span>
+                        </div>
+
+                        {/* Quick 1-click toggle for Text Overlay */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-700/80">
                           <button
                             type="button"
-                            onClick={() => openEditBanner(slide)}
-                            className="text-indigo-400 hover:text-indigo-300 font-bold text-xs flex items-center gap-1 cursor-pointer"
-                            title="ব্যানার এডিট করুন"
+                            onClick={() => {
+                              const nextState = !slide.showTextOverlay;
+                              updateBannerSlide(slide.id, { showTextOverlay: nextState });
+                              addToast(
+                                nextState 
+                                  ? 'ব্যানারের উপর লেখা চালু করা হয়েছে' 
+                                  : 'ব্যানারের উপর লেখা বন্ধ করা হয়েছে (শুধু পরিষ্কার ছবি দেখাবে)', 
+                                'info'
+                              );
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                              slide.showTextOverlay
+                                ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30'
+                                : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30'
+                            }`}
+                            title="১-ক্লিকে লেখা চালু বা বন্ধ করুন"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>এডিট</span>
+                            <span>{slide.showTextOverlay ? '✍️ লেখা লুকান (শুধু ব্যানার)' : '📝 লেখা চালু করুন'}</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setDeleteConfirmation({
-                                type: 'banner',
-                                id: slide.id,
-                                name: slide.titleBn,
-                                details: slide.subtitleBn,
-                              })
-                            }
-                            className="text-rose-400 hover:text-rose-300 font-bold text-xs flex items-center gap-1 cursor-pointer"
-                            title="ব্যানার মুছুন"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>মুছুন</span>
-                          </button>
+
+                          <div className="flex items-center gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => openEditBanner(slide)}
+                              className="text-indigo-400 hover:text-indigo-300 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                              title="ব্যানার এডিট করুন"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                              <span>এডিট</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDeleteConfirmation({
+                                  type: 'banner',
+                                  id: slide.id,
+                                  name: slide.titleBn || 'ব্যানার',
+                                  details: slide.subtitleBn,
+                                })
+                              }
+                              className="text-rose-400 hover:text-rose-300 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                              title="ব্যানার মুছুন"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>মুছুন</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -2647,48 +2806,85 @@ export const AdminPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleUpdateBannerSubmit} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">ব্যানার শিরোনাম (বাংলা) *</label>
-                <input
-                  type="text"
-                  value={editSlideTitleBn}
-                  onChange={(e) => setEditSlideTitleBn(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400"
-                />
+            <form onSubmit={handleUpdateBannerSubmit} className="space-y-3.5 text-xs">
+              {/* Text Overlay Toggle in Edit Modal */}
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800 border border-slate-700">
+                <div>
+                  <div className="text-white font-bold text-xs">ব্যানারের উপর লেখা/টাইটেল দেখাতে চান?</div>
+                  <div className="text-[10.5px] text-slate-400">
+                    {editSlideShowText ? 'লেখা চালু আছে (ব্যানারে টেক্সট প্রদর্শিত হবে)' : 'বন্ধ (শুধুমাত্র আসল ব্যানার ছবি দেখা যাবে)'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditSlideShowText(!editSlideShowText)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                    editSlideShowText ? 'bg-indigo-600' : 'bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      editSlideShowText ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
 
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">উপ-শিরোনাম বা অফার বিবরণ</label>
-                <input
-                  type="text"
-                  value={editSlideSubtitleBn}
-                  onChange={(e) => setEditSlideSubtitleBn(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400"
-                />
-              </div>
+              {!editSlideShowText ? (
+                <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-[11px] leading-relaxed">
+                    বর্তমানে <strong>শুধু ব্যানার প্রদর্শিত হবে</strong>। ব্যানারের উপর কোনো লেখা বা কালো আবছা আবরণ থাকবে না।
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-3 p-3 rounded-xl bg-slate-800/60 border border-slate-700">
+                  <div>
+                    <label className="block text-slate-300 font-bold mb-1">ব্যানার শিরোনাম (বাংলা) [ঐচ্ছিক]</label>
+                    <input
+                      type="text"
+                      value={editSlideTitleBn}
+                      onChange={(e) => setEditSlideTitleBn(e.target.value)}
+                      placeholder="যেমন: ঈদ স্পেশাল মেগা সেল"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1">ব্যাজ টেক্সট</label>
-                  <input
-                    type="text"
-                    value={editSlideBadge}
-                    onChange={(e) => setEditSlideBadge(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400"
-                  />
+                  <div>
+                    <label className="block text-slate-300 font-bold mb-1">উপ-শিরোনাম বা অফার বিবরণ [ঐচ্ছিক]</label>
+                    <input
+                      type="text"
+                      value={editSlideSubtitleBn}
+                      onChange={(e) => setEditSlideSubtitleBn(e.target.value)}
+                      placeholder="যেমন: সকল পোশাকে মেগা ছাড়"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1">ব্যাজ টেক্সট</label>
+                      <input
+                        type="text"
+                        value={editSlideBadge}
+                        onChange={(e) => setEditSlideBadge(e.target.value)}
+                        placeholder="যেমন: ধামাকা অফার"
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1">অফার / ডিসকাউন্ট টেক্সট</label>
+                      <input
+                        type="text"
+                        value={editSlideDiscount}
+                        onChange={(e) => setEditSlideDiscount(e.target.value)}
+                        placeholder="যেমন: 50% ছাড়"
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1">অফার / ডিসকাউন্ট টেক্সট</label>
-                  <input
-                    type="text"
-                    value={editSlideDiscount}
-                    onChange={(e) => setEditSlideDiscount(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400"
-                  />
-                </div>
-              </div>
+              )}
 
               <div className="space-y-2 bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700">
                 <div className="flex items-center justify-between">

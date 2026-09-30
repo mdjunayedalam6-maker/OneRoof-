@@ -19,20 +19,21 @@ import { useApp } from '../context/AppContext';
 
 interface BannerSlide {
   id: string;
-  badgeBn: string;
-  badgeEn: string;
-  titleBn: string;
-  titleEn: string;
-  subtitleBn: string;
-  subtitleEn: string;
+  badgeBn?: string;
+  badgeEn?: string;
+  titleBn?: string;
+  titleEn?: string;
+  subtitleBn?: string;
+  subtitleEn?: string;
   coupon?: string;
-  discountTextBn: string;
-  discountTextEn: string;
-  btnTextBn: string;
-  btnTextEn: string;
+  discountTextBn?: string;
+  discountTextEn?: string;
+  btnTextBn?: string;
+  btnTextEn?: string;
   categoryTarget: string;
   image: string;
-  accentColor: string;
+  accentColor?: string;
+  showTextOverlay?: boolean;
 }
 
 const SLIDES_DATA: BannerSlide[] = [
@@ -52,6 +53,7 @@ const SLIDES_DATA: BannerSlide[] = [
     categoryTarget: 'fashion',
     image: eidBannerImg,
     accentColor: 'from-amber-500 to-amber-600',
+    showTextOverlay: false,
   },
   {
     id: 'slide-tech',
@@ -69,6 +71,7 @@ const SLIDES_DATA: BannerSlide[] = [
     categoryTarget: 'electronics',
     image: techBannerImg,
     accentColor: 'from-emerald-500 to-teal-600',
+    showTextOverlay: false,
   },
   {
     id: 'slide-grocery',
@@ -86,6 +89,7 @@ const SLIDES_DATA: BannerSlide[] = [
     categoryTarget: 'grocery',
     image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1600&h=600&auto=format&fit=crop&q=80',
     accentColor: 'from-green-500 to-emerald-600',
+    showTextOverlay: false,
   },
   {
     id: 'slide-home',
@@ -103,6 +107,7 @@ const SLIDES_DATA: BannerSlide[] = [
     categoryTarget: 'home',
     image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1600&h=600&auto=format&fit=crop&q=80',
     accentColor: 'from-blue-500 to-indigo-600',
+    showTextOverlay: false,
   },
   {
     id: 'slide-beauty',
@@ -120,6 +125,7 @@ const SLIDES_DATA: BannerSlide[] = [
     categoryTarget: 'beauty',
     image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=1600&h=600&auto=format&fit=crop&q=80',
     accentColor: 'from-pink-500 to-rose-600',
+    showTextOverlay: false,
   },
   {
     id: 'slide-delivery',
@@ -137,6 +143,7 @@ const SLIDES_DATA: BannerSlide[] = [
     categoryTarget: 'electronics',
     image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1600&h=600&auto=format&fit=crop&q=80',
     accentColor: 'from-amber-500 to-orange-600',
+    showTextOverlay: false,
   },
 ];
 
@@ -154,7 +161,7 @@ export const BannerSlider: React.FC = () => {
   const touchStartXRef = useRef<number | null>(null);
   const touchEndXRef = useRef<number | null>(null);
 
-  const slides = bannerSlides && bannerSlides.length >= 5 ? bannerSlides : SLIDES_DATA;
+  const slides = bannerSlides && bannerSlides.length > 0 ? bannerSlides : SLIDES_DATA;
   const totalSlides = slides.length;
 
   const nextSlide = useCallback(() => {
@@ -236,6 +243,7 @@ export const BannerSlider: React.FC = () => {
   }, [isPaused, nextSlide]);
 
   const activeSlide = slides[currentSlide] || slides[0];
+  const hasTextOverlay = Boolean(activeSlide?.showTextOverlay && (activeSlide.titleBn || activeSlide.badgeBn));
 
   return (
     <section 
@@ -244,16 +252,25 @@ export const BannerSlider: React.FC = () => {
     >
       {/* Slim, Compact, Ultra-Modern Hero Banner Canvas */}
       <div 
-        className="relative w-full h-[160px] sm:h-[185px] md:h-[210px] lg:h-[225px] rounded-xl sm:rounded-2xl overflow-hidden shadow-md shadow-slate-900/10 bg-slate-950 border border-slate-800/80 group select-none transition-all duration-300"
+        className={`relative w-full h-[165px] sm:h-[210px] md:h-[260px] lg:h-[300px] rounded-xl sm:rounded-2xl overflow-hidden shadow-md shadow-slate-900/10 bg-slate-950 border border-slate-800/80 group select-none transition-all duration-300 ${
+          !hasTextOverlay ? 'cursor-pointer' : ''
+        }`}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onClick={() => {
+          if (!hasTextOverlay) {
+            openCategory(activeSlide.categoryTarget || 'all');
+          }
+        }}
       >
         {/* Background Slides with smooth cross-fade & subtle ken-burns zoom */}
         {slides.map((slide, index) => {
           const isActive = index === currentSlide;
+          const slideHasText = Boolean(slide.showTextOverlay && (slide.titleBn || slide.badgeBn));
+
           return (
             <div
               key={slide.id}
@@ -263,110 +280,122 @@ export const BannerSlider: React.FC = () => {
             >
               {/* Background Cover Image */}
               <div
-                className={`absolute inset-0 bg-cover bg-center transition-transform duration-5000 ease-out ${
-                  isActive ? 'scale-105' : 'scale-100'
-                }`}
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 ease-out"
                 style={{ backgroundImage: `url(${slide.image})` }}
               />
 
-              {/* Multi-tier Cinematic Gradient Overlays for High Legibility */}
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/80 to-slate-950/30 sm:to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/40" />
-
-              {/* Decorative Subtle Glowing Spots */}
-              <div className="absolute -left-12 -top-12 w-64 h-64 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none" />
-              <div className="absolute right-6 bottom-4 w-52 h-52 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+              {/* Multi-tier Cinematic Gradient Overlays - ONLY when text is requested */}
+              {slideHasText && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/80 to-slate-950/30 sm:to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/40" />
+                  <div className="absolute -left-12 -top-12 w-64 h-64 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none" />
+                  <div className="absolute right-6 bottom-4 w-52 h-52 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+                </>
+              )}
             </div>
           );
         })}
 
-        {/* Foreground Content for Current Slide - Slim & Compact Layout */}
-        <div className="relative z-20 h-full flex items-center justify-between px-3.5 sm:px-8 md:px-12 text-white">
-          {/* Left / Main Text & Action Column */}
-          <div className="max-w-xl md:max-w-2xl flex flex-col justify-center py-2">
-            {/* Top Badges Row */}
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600/90 text-white text-[10px] sm:text-xs font-bold shadow-xs backdrop-blur-md">
-                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-300 animate-pulse" />
-                <span>{language === 'bn' ? activeSlide.badgeBn : activeSlide.badgeEn}</span>
-              </span>
-
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black shadow-xs">
-                <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-slate-950 text-slate-950" />
-                <span>{language === 'bn' ? activeSlide.discountTextBn : activeSlide.discountTextEn}</span>
-              </span>
-
-              {activeSlide.coupon && (
-                <button
-                  type="button"
-                  onClick={() => handleCopyCoupon(activeSlide.coupon)}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-amber-300 text-[10px] sm:text-xs font-mono font-bold tracking-wider backdrop-blur-xs transition-colors cursor-pointer"
-                  title="কুপন কপি করতে ক্লিক করুন"
-                >
-                  <Tag className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" />
-                  <span>{activeSlide.coupon}</span>
-                  {copiedCoupon === activeSlide.coupon ? (
-                    <Check className="w-2.5 h-2.5 text-emerald-400" />
-                  ) : (
-                    <Copy className="w-2.5 h-2.5 opacity-60 hover:opacity-100" />
-                  )}
-                </button>
-              )}
-            </div>
-
-            {/* Main Headline - Sleek, Punchy & Clear */}
-            <h2 className="text-base sm:text-xl md:text-2xl lg:text-[26px] font-black leading-tight tracking-tight text-white drop-shadow-sm mb-1 sm:mb-1.5 line-clamp-1">
-              {language === 'bn' ? activeSlide.titleBn : activeSlide.titleEn}
-            </h2>
-
-            {/* Subtitle / Description - Single concise line */}
-            <p className="text-[11px] sm:text-xs md:text-sm text-slate-200 font-normal leading-tight mb-2 sm:mb-3 line-clamp-1 max-w-lg drop-shadow-xs">
-              {language === 'bn' ? activeSlide.subtitleBn : activeSlide.subtitleEn}
-            </p>
-
-            {/* Call to Action Button & Quick Highlight */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                onClick={() => openCategory(activeSlide.categoryTarget)}
-                className="px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm inline-flex items-center gap-1.5 shadow-md shadow-emerald-950/40 transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
-              >
-                <span className="whitespace-nowrap">{language === 'bn' ? activeSlide.btnTextBn : activeSlide.btnTextEn}</span>
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-0.5 shrink-0" />
-              </button>
-
-              <div className="hidden xs:flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-300 font-medium">
-                <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
-                <span>{language === 'bn' ? '100% অরিজিনাল' : '100% Original'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Desktop Glassmorphic Quick Pill (Compact & Elegant) */}
-          <div className="hidden lg:flex flex-col items-end gap-2 pr-6">
-            <div className="bg-slate-900/70 border border-white/15 backdrop-blur-md rounded-xl p-2.5 text-right shadow-lg">
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                {language === 'bn' ? 'বিশেষ ছাড় কুপন' : 'Promo Coupon'}
-              </div>
-              <button
-                type="button"
-                onClick={() => handleCopyCoupon(activeSlide.coupon)}
-                className="mt-1 flex items-center gap-1.5 bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-amber-300 px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer"
-              >
-                <span>{activeSlide.coupon || 'ONEROOFMART10'}</span>
-                {copiedCoupon === activeSlide.coupon ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5 text-amber-300" />
+        {/* Foreground Content for Current Slide - Slim & Compact Layout (Only when text overlay is requested) */}
+        {hasTextOverlay && (
+          <div className="relative z-20 h-full flex items-center justify-between px-3.5 sm:px-8 md:px-12 text-white">
+            {/* Left / Main Text & Action Column */}
+            <div className="max-w-xl md:max-w-2xl flex flex-col justify-center py-2">
+              {/* Top Badges Row */}
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5">
+                {activeSlide.badgeBn && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600/90 text-white text-[10px] sm:text-xs font-bold shadow-xs backdrop-blur-md">
+                    <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-300 animate-pulse" />
+                    <span>{language === 'bn' ? activeSlide.badgeBn : activeSlide.badgeEn}</span>
+                  </span>
                 )}
-              </button>
+
+                {activeSlide.discountTextBn && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] sm:text-xs font-black shadow-xs">
+                    <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-slate-950 text-slate-950" />
+                    <span>{language === 'bn' ? activeSlide.discountTextBn : activeSlide.discountTextEn}</span>
+                  </span>
+                )}
+
+                {activeSlide.coupon && (
+                  <button
+                    type="button"
+                    onClick={() => handleCopyCoupon(activeSlide.coupon)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-amber-300 text-[10px] sm:text-xs font-mono font-bold tracking-wider backdrop-blur-xs transition-colors cursor-pointer"
+                    title="কুপন কপি করতে ক্লিক করুন"
+                  >
+                    <Tag className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" />
+                    <span>{activeSlide.coupon}</span>
+                    {copiedCoupon === activeSlide.coupon ? (
+                      <Check className="w-2.5 h-2.5 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-2.5 h-2.5 opacity-60 hover:opacity-100" />
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Main Headline - Sleek, Punchy & Clear */}
+              {activeSlide.titleBn && (
+                <h2 className="text-base sm:text-xl md:text-2xl lg:text-[26px] font-black leading-tight tracking-tight text-white drop-shadow-sm mb-1 sm:mb-1.5 line-clamp-1">
+                  {language === 'bn' ? activeSlide.titleBn : activeSlide.titleEn}
+                </h2>
+              )}
+
+              {/* Subtitle / Description - Single concise line */}
+              {activeSlide.subtitleBn && (
+                <p className="text-[11px] sm:text-xs md:text-sm text-slate-200 font-normal leading-tight mb-2 sm:mb-3 line-clamp-1 max-w-lg drop-shadow-xs">
+                  {language === 'bn' ? activeSlide.subtitleBn : activeSlide.subtitleEn}
+                </p>
+              )}
+
+              {/* Call to Action Button & Quick Highlight */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  onClick={() => openCategory(activeSlide.categoryTarget)}
+                  className="px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm inline-flex items-center gap-1.5 shadow-md shadow-emerald-950/40 transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
+                >
+                  <span className="whitespace-nowrap">{language === 'bn' ? (activeSlide.btnTextBn || 'অফার দেখুন') : (activeSlide.btnTextEn || 'Shop Now')}</span>
+                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-0.5 shrink-0" />
+                </button>
+
+                <div className="hidden xs:flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-300 font-medium">
+                  <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
+                  <span>{language === 'bn' ? '100% অরিজিনাল' : '100% Original'}</span>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-300 bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded-full">
-              <Truck className="w-3 h-3 text-emerald-400" />
-              <span>{language === 'bn' ? 'দ্রুত হোম ডেলিভারি' : 'Fast Delivery'}</span>
+            {/* Right Column: Desktop Glassmorphic Quick Pill (Compact & Elegant) */}
+            <div className="hidden lg:flex flex-col items-end gap-2 pr-6">
+              {activeSlide.coupon && (
+                <div className="bg-slate-900/70 border border-white/15 backdrop-blur-md rounded-xl p-2.5 text-right shadow-lg">
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                    {language === 'bn' ? 'বিশেষ ছাড় কুপন' : 'Promo Coupon'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyCoupon(activeSlide.coupon)}
+                    className="mt-1 flex items-center gap-1.5 bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-amber-300 px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer"
+                  >
+                    <span>{activeSlide.coupon}</span>
+                    {copiedCoupon === activeSlide.coupon ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5 text-amber-300" />
+                    )}
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5 text-[10px] text-slate-300 bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                <Truck className="w-3 h-3 text-emerald-400" />
+                <span>{language === 'bn' ? 'দ্রুত হোম ডেলিভারি' : 'Fast Delivery'}</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Compact Navigation Arrows (Clean & Minimalist) */}
         <button

@@ -43,20 +43,21 @@ export interface SiteSettings {
 
 export interface AdminBannerSlide {
   id: string;
-  badgeBn: string;
-  badgeEn: string;
-  titleBn: string;
-  titleEn: string;
-  subtitleBn: string;
-  subtitleEn: string;
+  badgeBn?: string;
+  badgeEn?: string;
+  titleBn?: string;
+  titleEn?: string;
+  subtitleBn?: string;
+  subtitleEn?: string;
   coupon?: string;
-  discountTextBn: string;
-  discountTextEn: string;
-  btnTextBn: string;
-  btnTextEn: string;
+  discountTextBn?: string;
+  discountTextEn?: string;
+  btnTextBn?: string;
+  btnTextEn?: string;
   categoryTarget: string;
   image: string;
-  accentColor: string;
+  accentColor?: string;
+  showTextOverlay?: boolean;
 }
 
 export interface SubCategory {

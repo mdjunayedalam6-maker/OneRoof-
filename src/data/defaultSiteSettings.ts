@@ -48,6 +48,7 @@ export const DEFAULT_BANNER_SLIDES: AdminBannerSlide[] = [
     categoryTarget: 'fashion',
     image: eidBannerImg,
     accentColor: 'from-amber-500 to-amber-600',
+    showTextOverlay: false,
   },
   {
     id: 'slide-tech',
@@ -65,6 +66,7 @@ export const DEFAULT_BANNER_SLIDES: AdminBannerSlide[] = [
     categoryTarget: 'electronics',
     image: techBannerImg,
     accentColor: 'from-emerald-500 to-teal-600',
+    showTextOverlay: false,
   },
   {
     id: 'slide-grocery',
@@ -82,6 +84,7 @@ export const DEFAULT_BANNER_SLIDES: AdminBannerSlide[] = [
     categoryTarget: 'grocery',
     image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1600&h=500&auto=format&fit=crop&q=85',
     accentColor: 'from-green-500 to-emerald-600',
+    showTextOverlay: false,
   },
   {
     id: 'slide-home',
@@ -99,6 +102,7 @@ export const DEFAULT_BANNER_SLIDES: AdminBannerSlide[] = [
     categoryTarget: 'home',
     image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1600&h=500&auto=format&fit=crop&q=85',
     accentColor: 'from-blue-500 to-indigo-600',
+    showTextOverlay: false,
   },
   {
     id: 'slide-beauty',
@@ -116,6 +120,7 @@ export const DEFAULT_BANNER_SLIDES: AdminBannerSlide[] = [
     categoryTarget: 'beauty',
     image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=1600&h=500&auto=format&fit=crop&q=85',
     accentColor: 'from-pink-500 to-rose-600',
+    showTextOverlay: false,
   },
   {
     id: 'slide-delivery',
@@ -133,5 +138,6 @@ export const DEFAULT_BANNER_SLIDES: AdminBannerSlide[] = [
     categoryTarget: 'electronics',
     image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1600&h=500&auto=format&fit=crop&q=85',
     accentColor: 'from-amber-500 to-orange-600',
+    showTextOverlay: false,
   },
 ];

@@ -356,7 +356,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (saved !== null) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.map((slide: AdminBannerSlide) => ({
+            ...slide,
+            showTextOverlay: Boolean(slide.showTextOverlay),
+          }));
         }
       }
       return DEFAULT_BANNER_SLIDES;
