@@ -29,6 +29,7 @@ import {
   fetchOrdersFromSupabase,
   syncProductToSupabase,
   deleteProductFromSupabase,
+  deleteMultipleProductsFromSupabase,
   fetchProductsFromSupabase,
   syncSiteSettingsToSupabase,
   fetchSiteSettingsFromSupabase,
@@ -231,6 +232,41 @@ export const deduplicateProducts = (list: Product[]): Product[] => {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Track intentionally deleted products to guarantee they never resurrect on reload
+export const getDeletedProductIds = (): Set<string> => {
+  try {
+    const raw = safeLocalStorage.getItem('oneroof_deleted_product_ids');
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch {}
+  return new Set();
+};
+
+export const recordDeletedProductIds = (ids: string[]) => {
+  try {
+    if (!ids || ids.length === 0) return;
+    const existing = getDeletedProductIds();
+    ids.forEach((id) => existing.add(id));
+    const arr = Array.from(existing);
+    safeLocalStorage.setItem('oneroof_deleted_product_ids', JSON.stringify(arr));
+    idbSet('oneroof_deleted_product_ids', arr).catch(() => {});
+  } catch {}
+};
+
+export const unrecordDeletedProductId = (id: string) => {
+  try {
+    const existing = getDeletedProductIds();
+    if (existing.has(id)) {
+      existing.delete(id);
+      const arr = Array.from(existing);
+      safeLocalStorage.setItem('oneroof_deleted_product_ids', JSON.stringify(arr));
+      idbSet('oneroof_deleted_product_ids', arr).catch(() => {});
+    }
+  } catch {}
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     return (safeLocalStorage.getItem('oneroof_lang') as Language) || 'bn';
@@ -239,25 +275,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentPage, setCurrentPageState] = useState<PageView>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // Persistent Products
+  // Persistent Products: Cleanly loads without resurrecting deleted items
   const [products, setProducts] = useState<Product[]>(() => {
     try {
+      const deletedIds = getDeletedProductIds();
       const saved = safeLocalStorage.getItem('oneroof_products');
       if (saved !== null) {
         const parsed: Product[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const parsedIds = new Set(parsed.map((p) => p.id));
-          const missing = INITIAL_PRODUCTS.filter((p) => !parsedIds.has(p.id));
-          if (missing.length > 0) {
-            const merged = deduplicateProducts([...missing, ...parsed]);
-            safeLocalStorage.setItem('oneroof_products', JSON.stringify(merged));
-            idbSet('oneroof_cached_products', merged).catch(() => {});
-            return merged;
-          }
-          return deduplicateProducts(parsed);
+          const validSaved = parsed.filter((p) => !deletedIds.has(p.id));
+          return deduplicateProducts(validSaved);
         }
       }
-      const initialClean = deduplicateProducts(INITIAL_PRODUCTS);
+      const initialClean = deduplicateProducts(
+        INITIAL_PRODUCTS.filter((p) => !deletedIds.has(p.id))
+      );
       safeLocalStorage.setItem('oneroof_products', JSON.stringify(initialClean));
       return initialClean;
     } catch {
@@ -526,9 +558,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .then(([cachedProducts, cachedCategories, cachedSlides]) => {
         if (!isMounted) return;
         if (cachedProducts && Array.isArray(cachedProducts) && cachedProducts.length > 0) {
-          const cachedIds = new Set(cachedProducts.map((p) => p.id));
-          const missing = INITIAL_PRODUCTS.filter((p) => !cachedIds.has(p.id));
-          const cleanCached = deduplicateProducts(missing.length > 0 ? [...missing, ...cachedProducts] : cachedProducts);
+          const deletedIds = getDeletedProductIds();
+          const cleanCached = deduplicateProducts(
+            cachedProducts.filter((p) => !deletedIds.has(p.id))
+          );
           setProducts(cleanCached);
           setIsProductsLoading(false);
         }
@@ -586,10 +619,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (isMounted) {
           if (remoteProducts && Array.isArray(remoteProducts) && remoteProducts.length > 0) {
-            const cleanRemote = deduplicateProducts(remoteProducts);
+            const deletedIds = getDeletedProductIds();
+            const cleanRemote = deduplicateProducts(
+              remoteProducts.filter((p) => !deletedIds.has(p.id))
+            );
             setProducts(cleanRemote);
             safeLocalStorage.setItem('oneroof_products', JSON.stringify(cleanRemote));
             idbSet('oneroof_cached_products', cleanRemote).catch(() => {});
+
+            // Auto-clean any products in Supabase that were previously marked as deleted
+            const ghostIds = remoteProducts
+              .filter((p) => deletedIds.has(p.id))
+              .map((p) => p.id);
+            if (ghostIds.length > 0) {
+              deleteMultipleProductsFromSupabase(ghostIds).catch(() => {});
+            }
           }
           if (remoteOrders && remoteOrders.length > 0) setOrders(remoteOrders);
           if (remoteSettings) {
@@ -702,6 +746,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 if (!isMounted) return;
                 if (payload.eventType === 'INSERT' && payload.new?.data) {
                   const newProduct = payload.new.data as Product;
+                  const deletedIds = getDeletedProductIds();
+                  if (deletedIds.has(newProduct.id)) return;
                   setProducts((prev) => {
                     const next = deduplicateProducts([newProduct, ...prev]);
                     safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
@@ -710,6 +756,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   });
                 } else if (payload.eventType === 'UPDATE' && payload.new?.data) {
                   const updatedProduct = payload.new.data as Product;
+                  const deletedIds = getDeletedProductIds();
+                  if (deletedIds.has(updatedProduct.id)) return;
                   setProducts((prev) => {
                     const next = prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
                     safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
@@ -718,6 +766,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   });
                 } else if (payload.eventType === 'DELETE' && payload.old?.id) {
                   const deletedId = payload.old.id;
+                  recordDeletedProductIds([deletedId]);
                   setProducts((prev) => {
                     const next = prev.filter((p) => p.id !== deletedId);
                     safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
@@ -1081,6 +1130,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Product Admin Operations
   const addProduct = (newProduct: Product) => {
+    // Unrecord from deleted set if re-adding
+    unrecordDeletedProductId(newProduct.id);
+
     // Automatically ensure the product's category exists on the website
     if (newProduct.category) {
       ensureCategoryExists(
@@ -1092,9 +1144,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     setProducts((prev) => {
       const filtered = prev.filter((p) => p.id !== newProduct.id);
-      return [newProduct, ...filtered];
+      const next = [newProduct, ...filtered];
+      safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
+      idbSet('oneroof_cached_products', next).catch(() => {});
+      return next;
     });
-    syncProductToSupabase(newProduct);
+    syncProductToSupabase(newProduct).catch((err) => {
+      console.warn('Supabase product add warning:', err);
+    });
     addToast(
       language === 'bn' 
         ? `"${newProduct.titleBn}" প্রডাক্ট সফলভাবে যুক্ত হয়েছে!` 
@@ -1105,6 +1162,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addMultipleProducts = (newProducts: Product[]) => {
     if (!newProducts || newProducts.length === 0) return;
+
+    for (const p of newProducts) {
+      unrecordDeletedProductId(p.id);
+    }
 
     // Automatically ensure all categories exist on the website
     const categoriesProcessed = new Set<string>();
@@ -1124,11 +1185,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const incomingClean = deduplicateProducts(newProducts);
       const incomingIds = new Set(incomingClean.map((p) => p.id));
       const filteredExisting = prev.filter((p) => !incomingIds.has(p.id));
-      return [...incomingClean, ...filteredExisting];
+      const next = [...incomingClean, ...filteredExisting];
+      safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
+      idbSet('oneroof_cached_products', next).catch(() => {});
+      return next;
     });
-    for (const p of newProducts) {
-      syncProductToSupabase(p).catch(() => {});
-    }
+    syncProductsBatchToSupabase(newProducts).catch((err) => {
+      console.warn('Supabase batch add warning:', err);
+    });
     addToast(
       language === 'bn' 
         ? `${newProducts.length}টি প্রোডাক্ট সফলভাবে যুক্ত করা হয়েছে!` 
@@ -1138,30 +1202,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateProduct = (id: string, updated: Partial<Product>) => {
+    let updatedTarget: Product | undefined;
     setProducts((prev) => {
-      const next = prev.map((p) => (p.id === id ? { ...p, ...updated } : p));
-      const target = next.find((p) => p.id === id);
-      if (target) {
-        syncProductToSupabase(target);
-      }
+      const next = prev.map((p) => {
+        if (p.id === id) {
+          const merged = { ...p, ...updated };
+          updatedTarget = merged;
+          return merged;
+        }
+        return p;
+      });
+      safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
+      idbSet('oneroof_cached_products', next).catch(() => {});
       return next;
     });
+
+    if (updatedTarget) {
+      syncProductToSupabase(updatedTarget).catch((err) => {
+        console.warn('Supabase product update warning:', err);
+      });
+    }
+
     addToast(language === 'bn' ? 'প্রডাক্ট তথ্য আপডেট করা হয়েছে!' : 'Product updated successfully!', 'success');
   };
 
   const deleteProduct = (id: string) => {
+    recordDeletedProductIds([id]);
     setProducts((prev) => {
       const next = prev.filter((p) => p.id !== id);
       safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
       idbSet('oneroof_cached_products', next).catch(() => {});
       return next;
     });
-    deleteProductFromSupabase(id);
+    deleteProductFromSupabase(id).catch((err) => {
+      console.warn('Supabase delete error:', err);
+    });
     addToast(language === 'bn' ? 'প্রডাক্ট সফলভাবে মুছে ফেলা হয়েছে!' : 'Product deleted successfully!', 'info');
   };
 
   const deleteMultipleProducts = (ids: string[]) => {
     if (!ids || ids.length === 0) return;
+    recordDeletedProductIds(ids);
     const idSet = new Set(ids);
     setProducts((prev) => {
       const next = prev.filter((p) => !idSet.has(p.id));
@@ -1169,7 +1250,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       idbSet('oneroof_cached_products', next).catch(() => {});
       return next;
     });
-    ids.forEach((id) => deleteProductFromSupabase(id));
+    deleteMultipleProductsFromSupabase(ids).catch((err) => {
+      console.warn('Supabase batch delete error:', err);
+    });
     addToast(
       language === 'bn' 
         ? `${ids.length}টি পণ্য সফলভাবে মুছে ফেলা হয়েছে!` 
@@ -1179,6 +1262,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetProductsToDefault = () => {
+    safeLocalStorage.removeItem('oneroof_deleted_product_ids');
+    idbSet('oneroof_deleted_product_ids', []).catch(() => {});
     const cleanDefault = deduplicateProducts(INITIAL_PRODUCTS);
     setProducts(cleanDefault);
     safeLocalStorage.setItem('oneroof_products', JSON.stringify(cleanDefault));

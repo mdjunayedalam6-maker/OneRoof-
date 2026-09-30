@@ -368,30 +368,86 @@ export async function syncProductsBatchToSupabase(products: Product[]): Promise<
 export async function deleteProductFromSupabase(productId: string): Promise<boolean> {
   try {
     const { error } = await supabase.from('products').delete().eq('id', productId);
-    return !error;
+    if (error) {
+      console.warn('Supabase delete error:', error.message);
+      return false;
+    }
+    return true;
   } catch {
+    return false;
+  }
+}
+
+export async function deleteMultipleProductsFromSupabase(productIds: string[]): Promise<boolean> {
+  if (!productIds || productIds.length === 0) return true;
+  try {
+    const batchSize = 100;
+    for (let i = 0; i < productIds.length; i += batchSize) {
+      const chunk = productIds.slice(i, i + batchSize);
+      const { error } = await supabase.from('products').delete().in('id', chunk);
+      if (error) {
+        console.warn('Supabase batch delete error:', error.message);
+      }
+    }
+    return true;
+  } catch (e) {
+    console.warn('Supabase batch delete exception:', e);
     return false;
   }
 }
 
 export async function fetchProductsFromSupabase(): Promise<Product[] | null> {
   try {
-    const query = supabase
-      .from('products')
-      .select('data')
-      .order('created_at', { ascending: false });
+    const allProducts: Product[] = [];
+    const step = 1000;
+    let from = 0;
+    const maxPages = 5; // Up to 5000 products
 
-    // 8-second timeout guarantee to prevent infinite network hang
-    const timeoutPromise = new Promise<any>((_, reject) =>
-      setTimeout(() => reject(new Error('Product fetch timeout')), 8000)
-    );
+    for (let page = 0; page < maxPages; page++) {
+      const query = supabase
+        .from('products')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .range(from, from + step - 1);
 
-    const { data, error } = await Promise.race([query, timeoutPromise]);
+      // 8-second timeout guarantee
+      const timeoutPromise = new Promise<any>((_, reject) =>
+        setTimeout(() => reject(new Error('Product fetch timeout')), 8000)
+      );
 
-    if (error || !data) {
+      const { data, error } = await Promise.race([query, timeoutPromise]);
+
+      if (error || !data || data.length === 0) {
+        break;
+      }
+
+      for (const row of data) {
+        if (row) {
+          const item: Product = (row.data && typeof row.data === 'object') ? { ...(row.data as Product) } : ({} as Product);
+          item.id = row.id || item.id;
+          if (row.title_bn) item.titleBn = row.title_bn;
+          if (row.title_en) item.titleEn = row.title_en;
+          if (row.price !== undefined && row.price !== null) item.price = Number(row.price);
+          if (row.original_price !== undefined && row.original_price !== null) item.originalPrice = Number(row.original_price);
+          if (row.category) item.category = row.category;
+          if (row.subcategory) item.subcategory = row.subcategory;
+          if (row.stock !== undefined && row.stock !== null) item.stock = Number(row.stock);
+          if (item.id) {
+            allProducts.push(item);
+          }
+        }
+      }
+
+      if (data.length < step) {
+        break;
+      }
+      from += step;
+    }
+
+    if (allProducts.length === 0) {
       return null;
     }
-    return data.map((row: any) => row.data as Product);
+    return allProducts;
   } catch (e) {
     console.warn('Supabase fetchProducts notice:', e);
     return null;
