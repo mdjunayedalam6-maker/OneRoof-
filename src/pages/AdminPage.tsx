@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   Package, 
@@ -150,6 +150,73 @@ export const AdminPage: React.FC = () => {
   const [isUploadingEditBanner, setIsUploadingEditBanner] = useState(false);
   const [newSlideShowText, setNewSlideShowText] = useState(false);
   const [editSlideShowText, setEditSlideShowText] = useState(false);
+
+  // Delivery Charges Input States (supports typing English digits 0-9 smoothly, with full backspacing and auto-translation of Bengali digits)
+  const [shippingInsideInput, setShippingInsideInput] = useState<string>(() => 
+    String(siteSettings.shippingFeeInsideDhaka ?? 60)
+  );
+  const [shippingOutsideInput, setShippingOutsideInput] = useState<string>(() => 
+    String(siteSettings.shippingFeeOutsideDhaka ?? 120)
+  );
+  const [shippingExpressInput, setShippingExpressInput] = useState<string>(() => 
+    String(siteSettings.shippingFeeExpress ?? 150)
+  );
+  const [freeShippingThresholdInput, setFreeShippingThresholdInput] = useState<string>(() => 
+    String(siteSettings.freeShippingThreshold ?? 2000)
+  );
+
+  useEffect(() => {
+    setShippingInsideInput(String(siteSettings.shippingFeeInsideDhaka ?? 60));
+  }, [siteSettings.shippingFeeInsideDhaka]);
+
+  useEffect(() => {
+    setShippingOutsideInput(String(siteSettings.shippingFeeOutsideDhaka ?? 120));
+  }, [siteSettings.shippingFeeOutsideDhaka]);
+
+  useEffect(() => {
+    setShippingExpressInput(String(siteSettings.shippingFeeExpress ?? 150));
+  }, [siteSettings.shippingFeeExpress]);
+
+  useEffect(() => {
+    setFreeShippingThresholdInput(String(siteSettings.freeShippingThreshold ?? 2000));
+  }, [siteSettings.freeShippingThreshold]);
+
+  // Convert any Bengali numerals to clean English digits (0-9) and filter non-digit characters
+  const sanitizeToEnglishDigits = (raw: string): string => {
+    const bnToEnMap: Record<string, string> = {
+      '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+      '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+    };
+    return raw.replace(/[০-৯]/g, (d) => bnToEnMap[d] || d).replace(/[^0-9]/g, '');
+  };
+
+  const handleShippingInsideChange = (val: string) => {
+    const sanitized = sanitizeToEnglishDigits(val);
+    setShippingInsideInput(sanitized);
+    const num = sanitized === '' ? 0 : parseInt(sanitized, 10);
+    updateSiteSettings({ shippingFeeInsideDhaka: num });
+  };
+
+  const handleShippingOutsideChange = (val: string) => {
+    const sanitized = sanitizeToEnglishDigits(val);
+    setShippingOutsideInput(sanitized);
+    const num = sanitized === '' ? 0 : parseInt(sanitized, 10);
+    updateSiteSettings({ shippingFeeOutsideDhaka: num });
+  };
+
+  const handleShippingExpressChange = (val: string) => {
+    const sanitized = sanitizeToEnglishDigits(val);
+    setShippingExpressInput(sanitized);
+    const num = sanitized === '' ? 0 : parseInt(sanitized, 10);
+    updateSiteSettings({ shippingFeeExpress: num });
+  };
+
+  const handleFreeShippingThresholdChange = (val: string) => {
+    const sanitized = sanitizeToEnglishDigits(val);
+    setFreeShippingThresholdInput(sanitized);
+    const num = sanitized === '' ? 0 : parseInt(sanitized, 10);
+    updateSiteSettings({ freeShippingThreshold: num });
+  };
 
   const handleBannerImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -1778,77 +1845,166 @@ export const AdminPage: React.FC = () => {
             {/* Delivery Charges Management Card */}
             <div className="bg-slate-800/80 p-6 rounded-3xl border border-slate-700/80 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-700/60">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-emerald-400" />
-                  <span>ডেলিভারি চার্জ ও শিপিং খরচ নিয়ন্ত্রণ (Shipping & Delivery Charges)</span>
-                </h3>
-                <span className="text-[11px] text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-800/60 font-medium">
-                  গ্রাহকের চেকআউটে তাৎক্ষণিক প্রযোজ্য হবে
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-emerald-400" />
+                    <span>ডেলিভারি চার্জ ও শিপিং খরচ নিয়ন্ত্রণ (Shipping & Delivery Charges)</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    ইংরেজি সংখ্যায় (যেমন: 60, 120, 150) সরাসরি লিখে বা নিচের বাটনে ক্লিক করে সহজে ডেলিভারি চার্জ নির্ধারণ করুন।
+                  </p>
+                </div>
+                <span className="text-[11px] text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-800/60 font-medium whitespace-nowrap">
+                  চেকআউটে তাৎক্ষণিক প্রযোজ্য
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                 {/* Inside Dhaka */}
-                <div className="p-4 bg-slate-900 rounded-2xl border border-slate-700 space-y-2">
-                  <label className="font-bold text-slate-200 flex items-center justify-between">
-                    <span>ঢাকার ভেতরে ডেলিভারি চার্জ (৳)</span>
-                    <span className="text-[10px] text-emerald-400 font-bold">Inside Dhaka</span>
-                  </label>
+                <div className="p-4 bg-slate-900 rounded-2xl border border-slate-700 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-200">
+                      ঢাকার ভেতরে ডেলিভারি চার্জ
+                    </label>
+                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/60 font-mono">
+                      Inside Dhaka
+                    </span>
+                  </div>
+
                   <div className="relative">
                     <input
-                      type="number"
-                      value={siteSettings.shippingFeeInsideDhaka ?? 60}
-                      onChange={(e) => updateSiteSettings({ shippingFeeInsideDhaka: Math.max(0, Number(e.target.value)) })}
-                      min="0"
-                      className="w-full pl-8 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white font-bold outline-none focus:border-emerald-400"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
+                      value={shippingInsideInput}
+                      onChange={(e) => handleShippingInsideChange(e.target.value)}
+                      placeholder="60"
+                      className="w-full pl-8 pr-12 py-2.5 bg-slate-950 border border-slate-700 focus:border-emerald-400 rounded-xl text-white font-mono text-sm font-bold outline-none transition-colors"
                     />
-                    <span className="absolute left-3 top-2 text-slate-400 font-bold">৳</span>
+                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">৳</span>
+                    <span className="absolute right-3 top-2.5 text-[11px] text-slate-500 font-mono font-bold">BDT</span>
                   </div>
-                  <p className="text-[11px] text-slate-400">ঢাকা সিটির কাস্টমারদের জন্য নির্ধারিত চার্জ।</p>
+
+                  {/* Quick Preset Amount Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] text-slate-400 font-medium">দ্রুত নির্বাচন:</span>
+                    {[50, 60, 70, 80, 100].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => handleShippingInsideChange(String(amt))}
+                        className={`px-2 py-0.5 rounded-md font-mono text-[11px] font-bold transition-all cursor-pointer ${
+                          shippingInsideInput === String(amt)
+                            ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                        }`}
+                      >
+                        ৳{amt}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10.5px] text-slate-400">ঢাকা শহরের ভেতরের ঠিকানার ডেলিভারি ফি।</p>
                 </div>
 
                 {/* Outside Dhaka */}
-                <div className="p-4 bg-slate-900 rounded-2xl border border-slate-700 space-y-2">
-                  <label className="font-bold text-slate-200 flex items-center justify-between">
-                    <span>ঢাকার বাইরে ডেলিভারি চার্জ (৳)</span>
-                    <span className="text-[10px] text-amber-400 font-bold">Outside Dhaka</span>
-                  </label>
+                <div className="p-4 bg-slate-900 rounded-2xl border border-slate-700 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-200">
+                      ঢাকার বাইরে ডেলিভারি চার্জ
+                    </label>
+                    <span className="text-[10px] text-amber-400 font-bold bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/60 font-mono">
+                      Outside Dhaka
+                    </span>
+                  </div>
+
                   <div className="relative">
                     <input
-                      type="number"
-                      value={siteSettings.shippingFeeOutsideDhaka ?? 120}
-                      onChange={(e) => updateSiteSettings({ shippingFeeOutsideDhaka: Math.max(0, Number(e.target.value)) })}
-                      min="0"
-                      className="w-full pl-8 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white font-bold outline-none focus:border-amber-400"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
+                      value={shippingOutsideInput}
+                      onChange={(e) => handleShippingOutsideChange(e.target.value)}
+                      placeholder="120"
+                      className="w-full pl-8 pr-12 py-2.5 bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl text-white font-mono text-sm font-bold outline-none transition-colors"
                     />
-                    <span className="absolute left-3 top-2 text-slate-400 font-bold">৳</span>
+                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">৳</span>
+                    <span className="absolute right-3 top-2.5 text-[11px] text-slate-500 font-mono font-bold">BDT</span>
                   </div>
-                  <p className="text-[11px] text-slate-400">সমগ্র বাংলাদেশের অন্যান্য জেলার সাধারণ ডেলিভারি চার্জ।</p>
+
+                  {/* Quick Preset Amount Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] text-slate-400 font-medium">দ্রুত নির্বাচন:</span>
+                    {[90, 100, 120, 130, 150].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => handleShippingOutsideChange(String(amt))}
+                        className={`px-2 py-0.5 rounded-md font-mono text-[11px] font-bold transition-all cursor-pointer ${
+                          shippingOutsideInput === String(amt)
+                            ? 'bg-amber-500 text-slate-950 shadow-xs'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                        }`}
+                      >
+                        ৳{amt}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10.5px] text-slate-400">সমগ্র বাংলাদেশের অন্যান্য জেলার নিয়মিত ডেলিভারি ফি।</p>
                 </div>
 
                 {/* Express 24h Delivery */}
-                <div className="p-4 bg-slate-900 rounded-2xl border border-slate-700 space-y-2">
-                  <label className="font-bold text-slate-200 flex items-center justify-between">
-                    <span>জরুরি / এক্সপ্রেস চার্জ (৳)</span>
-                    <span className="text-[10px] text-indigo-400 font-bold">Express 24h</span>
-                  </label>
+                <div className="p-4 bg-slate-900 rounded-2xl border border-slate-700 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-200">
+                      জরুরি / এক্সপ্রেস চার্জ
+                    </label>
+                    <span className="text-[10px] text-indigo-400 font-bold bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/60 font-mono">
+                      Express 24h
+                    </span>
+                  </div>
+
                   <div className="relative">
                     <input
-                      type="number"
-                      value={siteSettings.shippingFeeExpress ?? 150}
-                      onChange={(e) => updateSiteSettings({ shippingFeeExpress: Math.max(0, Number(e.target.value)) })}
-                      min="0"
-                      className="w-full pl-8 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white font-bold outline-none focus:border-indigo-400"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
+                      value={shippingExpressInput}
+                      onChange={(e) => handleShippingExpressChange(e.target.value)}
+                      placeholder="150"
+                      className="w-full pl-8 pr-12 py-2.5 bg-slate-950 border border-slate-700 focus:border-indigo-400 rounded-xl text-white font-mono text-sm font-bold outline-none transition-colors"
                     />
-                    <span className="absolute left-3 top-2 text-slate-400 font-bold">৳</span>
+                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">৳</span>
+                    <span className="absolute right-3 top-2.5 text-[11px] text-slate-500 font-mono font-bold">BDT</span>
                   </div>
-                  <p className="text-[11px] text-slate-400">দ্রুততম সময়ে জরুরি ডেলিভারির অতিরিক্ত ফি।</p>
+
+                  {/* Quick Preset Amount Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] text-slate-400 font-medium">দ্রুত নির্বাচন:</span>
+                    {[120, 140, 150, 180, 200].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => handleShippingExpressChange(String(amt))}
+                        className={`px-2 py-0.5 rounded-md font-mono text-[11px] font-bold transition-all cursor-pointer ${
+                          shippingExpressInput === String(amt)
+                            ? 'bg-indigo-500 text-white shadow-xs'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                        }`}
+                      >
+                        ৳{amt}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10.5px] text-slate-400">দ্রুততম সময়ে জরুরি ডেলিভারির অতিরিক্ত ফি।</p>
                 </div>
 
                 {/* Free Delivery Toggle */}
                 <div className="p-4 bg-slate-900 rounded-2xl border border-slate-700 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-white">ফ্রি ডেলিভারি অফার</span>
+                    <span className="font-bold text-white text-xs">ফ্রি ডেলিভারি অফার</span>
                     <input
                       type="checkbox"
                       checked={siteSettings.enableFreeShipping !== false}
@@ -1862,21 +2018,41 @@ export const AdminPage: React.FC = () => {
                 </div>
 
                 {/* Free Delivery Minimum Order */}
-                <div className="p-4 bg-slate-900 rounded-2xl border border-slate-700 space-y-2">
+                <div className="p-4 bg-slate-900 rounded-2xl border border-slate-700 space-y-2.5">
                   <label className="font-bold text-slate-200 block">
                     ফ্রি ডেলিভারির সর্বনিম্ন অর্ডার (৳)
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
-                      value={siteSettings.freeShippingThreshold}
-                      onChange={(e) => updateSiteSettings({ freeShippingThreshold: Math.max(0, Number(e.target.value)) })}
-                      min="0"
-                      className="w-full pl-8 pr-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white font-bold outline-none focus:border-emerald-400"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
+                      value={freeShippingThresholdInput}
+                      onChange={(e) => handleFreeShippingThresholdChange(e.target.value)}
+                      placeholder="2000"
+                      className="w-full pl-8 pr-12 py-2 bg-slate-950 border border-slate-700 focus:border-emerald-400 rounded-xl text-white font-mono text-sm font-bold outline-none"
                     />
                     <span className="absolute left-3 top-2 text-slate-400 font-bold">৳</span>
+                    <span className="absolute right-3 top-2 text-[11px] text-slate-500 font-mono font-bold">BDT</span>
                   </div>
-                  <p className="text-[11px] text-slate-400">এই পরিমাণের বেশি অর্ডারে ডেলিভারি স্বয়ংক্রিয়ভাবে ফ্রি হবে।</p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[1000, 1500, 2000, 2500, 3000].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => handleFreeShippingThresholdChange(String(amt))}
+                        className={`px-2 py-0.5 rounded-md font-mono text-[10.5px] font-bold cursor-pointer ${
+                          freeShippingThresholdInput === String(amt)
+                            ? 'bg-emerald-500 text-slate-950'
+                            : 'bg-slate-800 text-slate-300 border border-slate-700'
+                        }`}
+                      >
+                        ৳{amt}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10.5px] text-slate-400">এই পরিমাণের বেশি অর্ডারে ডেলিভারি স্বয়ংক্রিয়ভাবে ফ্রি হবে।</p>
                 </div>
 
                 {/* Delivery Notice text */}
@@ -1889,9 +2065,9 @@ export const AdminPage: React.FC = () => {
                     value={siteSettings.deliveryNoteBn || ''}
                     onChange={(e) => updateSiteSettings({ deliveryNoteBn: e.target.value })}
                     placeholder="যেমন: ঢাকার ভেতরে 60 টাকা, ঢাকার বাইরে 120 টাকা"
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white outline-none focus:border-emerald-400"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-400 text-xs"
                   />
-                  <p className="text-[11px] text-slate-400">গ্রাহকদের সুবিধার জন্য চেকআউটে প্রদর্শিত নোট।</p>
+                  <p className="text-[10.5px] text-slate-400">গ্রাহকদের সুবিধার জন্য চেকআউটে প্রদর্শিত নোট।</p>
                 </div>
               </div>
             </div>
