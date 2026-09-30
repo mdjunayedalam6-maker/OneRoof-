@@ -16,6 +16,7 @@ import { ProductCard } from '../components/ProductCard';
 import { CategorySlimBanner } from '../components/CategorySlimBanner';
 import { toBengaliNumber } from '../utils/translations';
 import { isProductInCategory } from '../utils/categoryMatcher';
+import { getSubcategoryImage } from '../utils/subcategoryImages';
 
 export const ShopPage: React.FC = () => {
   const {
@@ -220,13 +221,21 @@ export const ShopPage: React.FC = () => {
                         <div className="pl-3 space-y-0.5 border-l-2 border-emerald-300 ml-2 py-0.5 animate-in fade-in duration-150">
                           <button
                             onClick={() => setFilterState((prev) => ({ ...prev, subcategory: 'all' }))}
-                            className={`w-full text-left px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                            className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
                               filterState.subcategory === 'all'
                                 ? 'text-emerald-700 font-bold bg-emerald-50/80'
                                 : 'text-slate-500 hover:text-slate-800'
                             }`}
                           >
-                            • {language === 'bn' ? 'সকল আইটেম' : 'All Items'}
+                            <img
+                              src={
+                                products.find((p) => p.category === c.id && p.images && p.images[0])?.images[0] ||
+                                c.image
+                              }
+                              alt={c.nameBn}
+                              className="w-4 h-4 rounded object-cover shrink-0 border border-slate-200"
+                            />
+                            <span>{language === 'bn' ? 'সকল আইটেম' : 'All Items'}</span>
                           </button>
                           {c.subcategories.map((sub) => {
                             const isSubSelected = 
@@ -237,13 +246,21 @@ export const ShopPage: React.FC = () => {
                               <button
                                 key={sub.id}
                                 onClick={() => setFilterState((prev) => ({ ...prev, subcategory: sub.id }))}
-                                className={`w-full text-left px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                                className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
                                   isSubSelected
                                     ? 'text-emerald-700 font-bold bg-emerald-50/80'
                                     : 'text-slate-500 hover:text-slate-800'
                                 }`}
                               >
-                                • {language === 'bn' ? sub.nameBn : sub.nameEn}
+                                <img
+                                  src={getSubcategoryImage(sub.id, sub.nameBn, sub.image, products, c.id)}
+                                  alt={sub.nameBn}
+                                  className="w-4 h-4 rounded object-cover shrink-0 border border-slate-200"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = getSubcategoryImage(sub.id, sub.nameBn, undefined, undefined, c.id);
+                                  }}
+                                />
+                                <span>{language === 'bn' ? sub.nameBn : sub.nameEn}</span>
                               </button>
                             );
                           })}
@@ -602,13 +619,21 @@ export const ShopPage: React.FC = () => {
                                 setFilterState((prev) => ({ ...prev, subcategory: 'all' }));
                                 setIsMobileFilterOpen(false);
                               }}
-                              className={`w-full text-left px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                              className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
                                 filterState.subcategory === 'all'
                                   ? 'text-emerald-700 font-bold bg-emerald-50/80'
                                   : 'text-slate-500 hover:text-slate-800'
                               }`}
                             >
-                              • {language === 'bn' ? 'সকল আইটেম' : 'All Items'}
+                              <img
+                                src={
+                                  products.find((p) => p.category === c.id && p.images && p.images[0])?.images[0] ||
+                                  c.image
+                                }
+                                alt={c.nameBn}
+                                className="w-4 h-4 rounded object-cover shrink-0 border border-slate-200"
+                              />
+                              <span>{language === 'bn' ? 'সকল আইটেম' : 'All Items'}</span>
                             </button>
                             {c.subcategories.map((sub) => {
                               const isSubSelected = 
@@ -622,13 +647,21 @@ export const ShopPage: React.FC = () => {
                                     setFilterState((prev) => ({ ...prev, subcategory: sub.id }));
                                     setIsMobileFilterOpen(false);
                                   }}
-                                  className={`w-full text-left px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                                  className={`w-full flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
                                     isSubSelected
                                       ? 'text-emerald-700 font-bold bg-emerald-50/80'
                                       : 'text-slate-500 hover:text-slate-800'
                                   }`}
                                 >
-                                  • {language === 'bn' ? sub.nameBn : sub.nameEn}
+                                  <img
+                                    src={getSubcategoryImage(sub.id, sub.nameBn, sub.image, products, c.id)}
+                                    alt={sub.nameBn}
+                                    className="w-4 h-4 rounded object-cover shrink-0 border border-slate-200"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = getSubcategoryImage(sub.id, sub.nameBn, undefined, undefined, c.id);
+                                    }}
+                                  />
+                                  <span>{language === 'bn' ? sub.nameBn : sub.nameEn}</span>
                                 </button>
                               );
                             })}

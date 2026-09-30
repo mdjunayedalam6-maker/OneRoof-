@@ -16,6 +16,7 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { toBengaliNumber } from '../utils/translations';
 
 const ICON_MAP: Record<string, any> = {
   Smartphone,
@@ -34,7 +35,7 @@ const ICON_MAP: Record<string, any> = {
 };
 
 export const CategoryGrid: React.FC = () => {
-  const { categories, openCategory, language, setCurrentPage, setFilterState } = useApp();
+  const { categories, openCategory, language, setCurrentPage, setFilterState, products } = useApp();
 
   return (
     <section className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
@@ -53,45 +54,60 @@ export const CategoryGrid: React.FC = () => {
             setFilterState((prev) => ({ ...prev, category: 'all', subcategory: 'all', searchQuery: '' }));
             setCurrentPage('shop');
           }}
-          className="text-xs sm:text-sm font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 group active:scale-95 transition-all"
+          className="text-xs sm:text-sm font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 group active:scale-95 transition-all cursor-pointer"
         >
           <span>{language === 'bn' ? 'সব দেখুন' : 'View All'}</span>
           <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
         </button>
       </div>
 
-      {/* 4 columns on mobile, 6 on tablet, 11 on desktop */}
-      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-11 gap-2 sm:gap-2.5">
+      {/* 3 columns on mobile (user request), 4 on small tablet, 6 on md, 11 on desktop */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11 gap-2 sm:gap-2.5">
         {categories.map((cat) => {
           const IconComponent = ICON_MAP[cat.iconName] || ShoppingBag;
           const displayName = language === 'bn' ? cat.nameBn : cat.nameEn;
+          const countText = language === 'bn' ? `${toBengaliNumber(cat.itemCount)}টি` : `${cat.itemCount} items`;
+
+          const matchingProduct = products.find(
+            (p) => p.category === cat.id && p.images && p.images.length > 0 && p.images[0]
+          );
+          const displayImage = matchingProduct?.images[0] || cat.image;
+
           return (
             <div
               key={cat.id}
               onClick={() => openCategory(cat.id)}
-              className="bg-white rounded-xl p-1.5 border border-slate-100 hover:border-emerald-400 hover:shadow-md transition-all duration-200 text-center cursor-pointer group flex flex-col items-center justify-start shadow-2xs active:scale-95"
+              className="bg-white rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200/80 hover:border-emerald-500 hover:shadow-lg transition-all duration-300 cursor-pointer group flex flex-col active:scale-95 shadow-2xs"
             >
-              <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden mb-1 bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-inner shrink-0">
+              {/* Large Rectangular Image Container */}
+              <div className="relative w-full aspect-[4/3] sm:aspect-square overflow-hidden bg-slate-100">
                 <img
-                  src={cat.image}
+                  src={displayImage}
                   alt={displayName}
-                  className="w-full h-full object-cover group-hover:opacity-85 transition-opacity"
+                  className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=200&auto=format&fit=crop&q=80';
+                    target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&auto=format&fit=crop&q=80';
                   }}
                 />
-                <div className="absolute inset-0 bg-emerald-950/20 group-hover:bg-emerald-950/30 transition-colors flex items-center justify-center">
-                  <IconComponent className="w-4 h-4 text-white drop-shadow-md" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 group-hover:opacity-30 transition-opacity" />
+                
+                {/* Floating Glassmorphism Icon Badge */}
+                <div className="absolute top-1.5 right-1.5 w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white/90 backdrop-blur-xs shadow-xs flex items-center justify-center text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                  <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               </div>
 
-              <div className="w-full min-h-[28px] flex items-center justify-center">
+              {/* Title & Count Information */}
+              <div className="p-1.5 sm:p-2.5 flex flex-col items-center justify-center text-center bg-white flex-1">
                 <span
                   title={displayName}
-                  className="text-[10.5px] sm:text-[11px] font-bold text-slate-800 group-hover:text-emerald-700 transition-colors leading-tight text-center line-clamp-2 px-0.5 break-words"
+                  className="text-[11.5px] sm:text-[13px] font-bold text-slate-800 group-hover:text-emerald-700 transition-colors leading-tight text-center line-clamp-2"
                 >
                   {displayName}
+                </span>
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 group-hover:text-emerald-600 transition-colors mt-0.5">
+                  {countText}
                 </span>
               </div>
             </div>

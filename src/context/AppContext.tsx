@@ -48,6 +48,7 @@ import {
 import { safeLocalStorage, safeSessionStorage } from '../utils/safeStorage';
 import { idbGet, idbSet } from '../utils/idbStorage';
 import { getShopBaseCategoryMetadata } from '../services/shopbaseService';
+import { getSubcategoryImage } from '../utils/subcategoryImages';
 import { calculateCategoryCounts } from '../utils/categoryMatcher';
 
 interface Toast {
@@ -243,7 +244,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const saved = safeLocalStorage.getItem('oneroof_products');
       if (saved !== null) {
         const parsed: Product[] = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const parsedIds = new Set(parsed.map((p) => p.id));
+          const missing = INITIAL_PRODUCTS.filter((p) => !parsedIds.has(p.id));
+          if (missing.length > 0) {
+            const merged = deduplicateProducts([...missing, ...parsed]);
+            safeLocalStorage.setItem('oneroof_products', JSON.stringify(merged));
+            idbSet('oneroof_cached_products', merged).catch(() => {});
+            return merged;
+          }
           return deduplicateProducts(parsed);
         }
       }
@@ -274,19 +283,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!Array.isArray(cats) || cats.length === 0) return CATEGORIES;
     // Keep only the 11 main categories
     const valid = cats.filter((c) => MAIN_11_ORDER.includes(c.id));
-    if (valid.length !== 11) {
-      const map = new Map(valid.map((c) => [c.id, c]));
-      return CATEGORIES.map((def) => map.get(def.id) || def);
-    }
-    // Sort strictly in the 11 main categories order
-    return valid.sort((a, b) => MAIN_11_ORDER.indexOf(a.id) - MAIN_11_ORDER.indexOf(b.id));
+    const defMap = new Map(CATEGORIES.map((c) => [c.id, c]));
+
+    const working = valid.length === 11 
+      ? valid 
+      : CATEGORIES.map((def) => {
+          const found = valid.find((c) => c.id === def.id);
+          return found || def;
+        });
+
+    // Ensure every subcategory has its latest distinct image
+    return working
+      .map((c) => {
+        const def = defMap.get(c.id);
+        const defSubMap = new Map((def?.subcategories || []).map((s) => [s.id, s.image]));
+        const updatedSubs = (c.subcategories || def?.subcategories || []).map((s) => ({
+          ...s,
+          image: s.image || defSubMap.get(s.id) || getSubcategoryImage(s.id, s.nameBn),
+        }));
+        return {
+          ...c,
+          subcategories: updatedSubs,
+        };
+      })
+      .sort((a, b) => MAIN_11_ORDER.indexOf(a.id) - MAIN_11_ORDER.indexOf(b.id));
   };
 
-  // Persistent Categories (guaranteed strictly 11 main categories)
+  // Persistent Categories (guaranteed strictly 11 main categories with distinct subcategory images)
   const [categories, setCategories] = useState<Category[]>(() => {
     try {
       const version = safeLocalStorage.getItem('oneroof_cat_schema_version');
-      if (version === 'v5_11_main_categories_strict') {
+      if (version === 'v6_subcategories_with_distinct_images') {
         const saved = safeLocalStorage.getItem('oneroof_categories');
         if (saved !== null) {
           const parsed: Category[] = JSON.parse(saved);
@@ -296,8 +323,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }
-      // Force migration to clean 11 structured categories
-      safeLocalStorage.setItem('oneroof_cat_schema_version', 'v5_11_main_categories_strict');
+      // Force migration to clean 11 structured categories with distinct subcategory images
+      safeLocalStorage.setItem('oneroof_cat_schema_version', 'v6_subcategories_with_distinct_images');
       safeLocalStorage.setItem('oneroof_categories', JSON.stringify(CATEGORIES));
       idbSet('oneroof_cached_categories', CATEGORIES).catch(() => {});
       syncCategoriesToSupabase(CATEGORIES).catch(() => {});
@@ -495,7 +522,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .then(([cachedProducts, cachedCategories, cachedSlides]) => {
         if (!isMounted) return;
         if (cachedProducts && Array.isArray(cachedProducts) && cachedProducts.length > 0) {
-          const cleanCached = deduplicateProducts(cachedProducts);
+          const cachedIds = new Set(cachedProducts.map((p) => p.id));
+          const missing = INITIAL_PRODUCTS.filter((p) => !cachedIds.has(p.id));
+          const cleanCached = deduplicateProducts(missing.length > 0 ? [...missing, ...cachedProducts] : cachedProducts);
           setProducts(cleanCached);
           setIsProductsLoading(false);
         }

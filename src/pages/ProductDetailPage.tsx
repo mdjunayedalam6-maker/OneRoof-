@@ -141,6 +141,17 @@ export const ProductDetailPage: React.FC = () => {
   const isSaved = isInWishlist(selectedProduct.id);
   const title = language === 'bn' ? selectedProduct.titleBn : selectedProduct.titleEn;
 
+  // Safe reviews and specifications fallback
+  const productReviews = React.useMemo(() => {
+    return Array.isArray(selectedProduct?.reviews) ? selectedProduct.reviews : [];
+  }, [selectedProduct?.reviews]);
+
+  const productSpecifications = React.useMemo(() => {
+    return (selectedProduct?.specifications && typeof selectedProduct.specifications === 'object')
+      ? selectedProduct.specifications
+      : {};
+  }, [selectedProduct?.specifications]);
+
   // Normalize and clean image list
   const sanitizedImages = React.useMemo(() => {
     if (!selectedProduct?.images || selectedProduct.images.length === 0) {
@@ -340,10 +351,10 @@ export const ProductDetailPage: React.FC = () => {
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 <span>{selectedProduct.rating}</span>
               </div>
-              {selectedProduct.reviews.length > 0 && (
+              {productReviews.length > 0 && (
                 <>
                   <span className="text-slate-500">
-                    {selectedProduct.reviewCount} {language === 'bn' ? 'টি কাস্টমার রিভিউ' : 'Customer Reviews'}
+                    {selectedProduct.reviewCount || productReviews.length} {language === 'bn' ? 'টি কাস্টমার রিভিউ' : 'Customer Reviews'}
                   </span>
                   <span className="text-slate-300">|</span>
                 </>
@@ -594,40 +605,46 @@ export const ProductDetailPage: React.FC = () => {
           >
             {t.specifications}
           </button>
-          {selectedProduct.reviews.length > 0 && (
-            <button
-              onClick={() => setActiveTab('reviews')}
-              className={`text-sm sm:text-base font-bold pb-2 relative transition-colors flex items-center gap-1.5 ${
-                activeTab === 'reviews'
-                  ? 'text-emerald-700 border-b-2 border-emerald-600'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <span>{t.reviews}</span>
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`text-sm sm:text-base font-bold pb-2 relative transition-colors flex items-center gap-1.5 ${
+              activeTab === 'reviews'
+                ? 'text-emerald-700 border-b-2 border-emerald-600'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>{t.reviews}</span>
+            {productReviews.length > 0 && (
               <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">
-                {selectedProduct.reviews.length}
+                {productReviews.length}
               </span>
-            </button>
-          )}
+            )}
+          </button>
         </div>
 
         {/* Tab 1: Specifications */}
         {activeTab === 'specs' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(selectedProduct.specifications)
-                .filter(([key]) => {
-                  const k = key.toLowerCase();
-                  const forbidden = ['সোর্স', 'উৎস', 'পাইকারি', 'হোলসেল', 'লাভ', 'প্রফিট', 'দাম'];
-                  return !forbidden.some(term => k.includes(term));
-                })
-                .map(([key, value]) => (
-                <div key={key} className="flex justify-between p-3 bg-slate-50 rounded-xl text-xs sm:text-sm">
-                  <span className="font-semibold text-slate-500">{key}</span>
-                  <span className="font-bold text-slate-800 text-right">{value}</span>
-                </div>
-              ))}
-            </div>
+            {Object.keys(productSpecifications).length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(productSpecifications)
+                  .filter(([key]) => {
+                    const k = key.toLowerCase();
+                    const forbidden = ['সোর্স', 'উৎস', 'পাইকারি', 'হোলসেল', 'লাভ', 'প্রফিট', 'দাম'];
+                    return !forbidden.some(term => k.includes(term));
+                  })
+                  .map(([key, value]) => (
+                  <div key={key} className="flex justify-between p-3 bg-slate-50 rounded-xl text-xs sm:text-sm">
+                    <span className="font-semibold text-slate-500">{key}</span>
+                    <span className="font-bold text-slate-800 text-right">{value}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 bg-slate-50 rounded-xl text-center text-xs sm:text-sm text-slate-500">
+                {language === 'bn' ? 'পণ্যটির বিস্তারিত তথ্য উপরে দেওয়া হয়েছে।' : 'Product specifications and details are provided above.'}
+              </div>
+            )}
 
             {selectedProduct.warranty && (
               <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-xs sm:text-sm text-amber-900 flex items-center gap-2">
@@ -661,7 +678,7 @@ export const ProductDetailPage: React.FC = () => {
                   ))}
                 </div>
                 <p className="text-xs text-slate-500">
-                  {selectedProduct.reviews.length} {language === 'bn' ? 'টি যাচাইকৃত রেটিং' : 'verified ratings'}
+                  {productReviews.length} {language === 'bn' ? 'টি যাচাইকৃত রেটিং' : 'verified ratings'}
                 </p>
               </div>
 
@@ -739,46 +756,54 @@ export const ProductDetailPage: React.FC = () => {
             )}
 
             {/* Reviews List */}
-            <div className="divide-y divide-slate-100">
-              {selectedProduct.reviews.map((rev) => (
-                <div key={rev.id} className="py-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs">
-                        {rev.userName.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <span>{rev.userName}</span>
-                          {rev.verifiedPurchase && (
-                            <span className="text-[10px] bg-emerald-50 text-emerald-700 font-medium px-1.5 py-0.2 rounded flex items-center gap-0.5">
-                              <Check className="w-3 h-3" />
-                              {t.verifiedPurchase}
-                            </span>
-                          )}
+            {productReviews.length > 0 ? (
+              <div className="divide-y divide-slate-100">
+                {productReviews.map((rev) => (
+                  <div key={rev.id} className="py-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs">
+                          {rev.userName.charAt(0)}
                         </div>
-                        <div className="text-[10px] text-slate-400">{rev.date}</div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <span>{rev.userName}</span>
+                            {rev.verifiedPurchase && (
+                              <span className="text-[10px] bg-emerald-50 text-emerald-700 font-medium px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                                <Check className="w-3 h-3" />
+                                {t.verifiedPurchase}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-400">{rev.date}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center text-amber-400">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`w-3.5 h-3.5 ${
+                              star <= rev.rating ? 'fill-amber-400' : 'text-slate-200'
+                            }`}
+                          />
+                        ))}
                       </div>
                     </div>
 
-                    <div className="flex items-center text-amber-400">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`w-3.5 h-3.5 ${
-                            star <= rev.rating ? 'fill-amber-400' : 'text-slate-200'
-                          }`}
-                        />
-                      ))}
-                    </div>
+                    <p className="text-xs text-slate-600 pl-10 leading-relaxed">
+                      {rev.comment}
+                    </p>
                   </div>
-
-                  <p className="text-xs text-slate-600 pl-10 leading-relaxed">
-                    {rev.comment}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center bg-white rounded-xl border border-dashed border-slate-200">
+                <p className="text-xs sm:text-sm text-slate-500">
+                  {language === 'bn' ? 'এখনও কোনো কাস্টমার রিভিউ নেই। আপনার রিভিউ দিতে উপরের বাটনে চাপুন।' : 'No customer reviews yet. Click above to be the first to review!'}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -63,6 +63,7 @@ export interface SubCategory {
   id: string;
   nameBn: string;
   nameEn: string;
+  image?: string;
 }
 
 export interface Category {
@@ -117,8 +118,8 @@ export interface Product {
   }[];
   sizes?: string[];
   colors?: string[];
-  specifications: Record<string, string>;
-  reviews: Review[];
+  specifications?: Record<string, string>;
+  reviews?: Review[];
   warranty?: string;
   deliveryTime?: string;
   shippingFee?: number;

@@ -40,6 +40,7 @@ import { Product, Category, Order, OrderStatus, AdminBannerSlide } from '../type
 import { ProductEditModal } from '../components/admin/ProductEditModal';
 import { OrderInvoiceModal } from '../components/admin/OrderInvoiceModal';
 import { ShopBaseImporter } from '../components/admin/ShopBaseImporter';
+import { compressImageFile } from '../utils/imageCompressor';
 
 export const AdminPage: React.FC = () => {
   const {
@@ -145,6 +146,46 @@ export const AdminPage: React.FC = () => {
   const [editSlideBadge, setEditSlideBadge] = useState('');
   const [editSlideDiscount, setEditSlideDiscount] = useState('');
   const [editSlideTargetCat, setEditSlideTargetCat] = useState('fashion');
+  const [isUploadingNewBanner, setIsUploadingNewBanner] = useState(false);
+  const [isUploadingEditBanner, setIsUploadingEditBanner] = useState(false);
+
+  const handleBannerImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: (url: string) => void,
+    setLoading?: (loading: boolean) => void
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      if (setLoading) setLoading(true);
+      // Auto compress phone photo to optimal web banner resolution (1600x900 at 0.85 quality)
+      const compressed = await compressImageFile(file, 1600, 900, 0.85);
+      setter(compressed);
+      addToast(
+        language === 'bn' 
+          ? 'ফোন/গ্যালারি থেকে ব্যানার ইমেজ সফলভাবে লোড হয়েছে!' 
+          : 'Banner image loaded from phone successfully!',
+        'success'
+      );
+    } catch (err) {
+      console.error('Failed to compress banner image:', err);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setter(reader.result as string);
+        addToast(
+          language === 'bn' 
+            ? 'ব্যানার ইমেজ লোড হয়েছে!' 
+            : 'Banner image loaded!',
+          'success'
+        );
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      if (setLoading) setLoading(false);
+      e.target.value = '';
+    }
+  };
 
   // Universal Delete Confirmation Dialog State (100% Reliable in iframe sandbox)
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
@@ -2030,14 +2071,72 @@ export const AdminPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1">ব্যানার ছবি লিংক (Image URL)</label>
-                  <input
-                    type="text"
-                    value={newSlideImage}
-                    onChange={(e) => setNewSlideImage(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none"
-                  />
+                <div className="sm:col-span-2 space-y-2 bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/60">
+                  <div className="flex items-center justify-between">
+                    <label className="text-slate-300 font-bold flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-amber-400" />
+                      <span>ব্যানার ছবি (ফোনের গ্যালারি বা ফাইল থেকে আপলোড) *</span>
+                    </label>
+                    {isUploadingNewBanner && (
+                      <span className="text-[11px] text-amber-400 animate-pulse flex items-center gap-1">
+                        <RotateCcw className="w-3 h-3 animate-spin" />
+                        <span>ছবি প্রসেস হচ্ছে...</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                    {/* Device / Phone Gallery Upload Button */}
+                    <div>
+                      <label className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl cursor-pointer shadow-md active:scale-98 transition-all">
+                        <Upload className="w-4 h-4" />
+                        <span>📁 ফোন / গ্যালারি থেকে ছবি আপলোড করুন</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleBannerImageUpload(e, setNewSlideImage, setIsUploadingNewBanner)}
+                          className="hidden"
+                        />
+                      </label>
+                      <p className="text-[10.5px] text-slate-400 mt-1.5">
+                        ফোনের ফটো লাইব্রেরি, ক্যামেরা বা ফাইল থেকে সরাসরি ব্যানার সিলেক্ট করুন।
+                      </p>
+                    </div>
+
+                    {/* URL Input */}
+                    <div>
+                      <input
+                        type="text"
+                        value={newSlideImage}
+                        onChange={(e) => setNewSlideImage(e.target.value)}
+                        placeholder="অথবা সরাসরি ইমেজ লিংক (URL) দিন"
+                        className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-amber-400 text-xs"
+                      />
+                      <p className="text-[10.5px] text-slate-500 mt-1.5">
+                        ইমেজ URL থাকলে সেটিও ব্যবহার করতে পারবেন।
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Live Banner Preview Box */}
+                  {newSlideImage && (
+                    <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-700 bg-slate-950/80">
+                      <div className="aspect-[21/9] sm:aspect-[24/9] w-full max-h-48 overflow-hidden flex items-center justify-center">
+                        <img
+                          src={newSlideImage}
+                          alt="Banner Preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&auto=format&fit=crop&q=80';
+                          }}
+                        />
+                      </div>
+                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-[10px] font-bold text-amber-400 border border-amber-400/30">
+                        লাইভ ব্যানার প্রিভিউ (Live Preview)
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -2591,15 +2690,60 @@ export const AdminPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-400 font-bold mb-1">ছবি URL *</label>
-                <input
-                  type="url"
-                  value={editSlideImage}
-                  onChange={(e) => setEditSlideImage(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400"
-                />
+              <div className="space-y-2 bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700">
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-300 font-bold flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4 text-indigo-400" />
+                    <span>ব্যানার ছবি (ফোনের গ্যালারি বা ফাইল থেকে আপলোড) *</span>
+                  </label>
+                  {isUploadingEditBanner && (
+                    <span className="text-[11px] text-indigo-400 animate-pulse flex items-center gap-1">
+                      <RotateCcw className="w-3 h-3 animate-spin" />
+                      <span>ছবি প্রসেস হচ্ছে...</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl cursor-pointer shadow-md active:scale-98 transition-all text-xs">
+                    <Upload className="w-4 h-4" />
+                    <span>📁 ফোন / গ্যালারি থেকে নতুন ছবি সিলেক্ট করুন</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleBannerImageUpload(e, setEditSlideImage, setIsUploadingEditBanner)}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <input
+                    type="text"
+                    value={editSlideImage}
+                    onChange={(e) => setEditSlideImage(e.target.value)}
+                    required
+                    placeholder="অথবা সরাসরি ইমেজ লিংক (URL) দিন"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-indigo-400 text-xs"
+                  />
+                </div>
+
+                {editSlideImage && (
+                  <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-700 bg-slate-950">
+                    <div className="aspect-[21/9] sm:aspect-[24/9] w-full max-h-40 overflow-hidden flex items-center justify-center">
+                      <img
+                        src={editSlideImage}
+                        alt="Edit Banner Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&auto=format&fit=crop&q=80';
+                        }}
+                      />
+                    </div>
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-[10px] font-bold text-indigo-400 border border-indigo-400/30">
+                      আপডেটেড লাইভ প্রিভিউ
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
