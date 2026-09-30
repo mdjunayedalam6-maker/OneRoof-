@@ -128,6 +128,7 @@ interface AppContextType {
   addMultipleProducts: (products: Product[]) => void;
   updateProduct: (id: string, updated: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
+  deleteMultipleProducts: (ids: string[]) => void;
   resetProductsToDefault: () => void;
   addCategory: (category: Category) => void;
   ensureCategoryExists: (
@@ -1149,9 +1150,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    setProducts((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
+      idbSet('oneroof_cached_products', next).catch(() => {});
+      return next;
+    });
     deleteProductFromSupabase(id);
     addToast(language === 'bn' ? 'প্রডাক্ট সফলভাবে মুছে ফেলা হয়েছে!' : 'Product deleted successfully!', 'info');
+  };
+
+  const deleteMultipleProducts = (ids: string[]) => {
+    if (!ids || ids.length === 0) return;
+    const idSet = new Set(ids);
+    setProducts((prev) => {
+      const next = prev.filter((p) => !idSet.has(p.id));
+      safeLocalStorage.setItem('oneroof_products', JSON.stringify(next));
+      idbSet('oneroof_cached_products', next).catch(() => {});
+      return next;
+    });
+    ids.forEach((id) => deleteProductFromSupabase(id));
+    addToast(
+      language === 'bn' 
+        ? `${ids.length}টি পণ্য সফলভাবে মুছে ফেলা হয়েছে!` 
+        : `${ids.length} products deleted successfully!`, 
+      'info'
+    );
   };
 
   const resetProductsToDefault = () => {
@@ -1870,6 +1894,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addMultipleProducts,
         updateProduct,
         deleteProduct,
+        deleteMultipleProducts,
         resetProductsToDefault,
         addCategory,
         ensureCategoryExists,

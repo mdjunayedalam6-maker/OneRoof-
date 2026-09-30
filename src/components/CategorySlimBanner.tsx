@@ -168,36 +168,27 @@ export const CategorySlimBanner: React.FC<CategorySlimBannerProps> = ({
           {categoryObj.subcategories && categoryObj.subcategories.length > 0 && (
             <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none">
               {/* All Items in This Main Category */}
-              {(() => {
-                const mainProduct = products?.find(
-                  (p) => p.category === categoryObj.id && p.images && p.images.length > 0 && p.images[0]
-                );
-                const mainImg = mainProduct?.images[0] || categoryObj.image;
-
-                return (
-                  <button
-                    onClick={() => onSelectSubcategory('all')}
-                    className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      currentSubcategory === 'all'
-                        ? 'bg-emerald-700 text-white shadow-xs scale-[1.02]'
-                        : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/90 hover:border-slate-300'
-                    }`}
-                  >
-                    <img
-                      src={mainImg}
-                      alt={categoryObj.nameBn}
-                      className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md object-cover shrink-0 ${
-                        currentSubcategory === 'all' ? 'ring-1 ring-white/60' : 'border border-slate-200'
-                      }`}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&auto=format&fit=crop&q=80';
-                      }}
-                    />
-                    <span>{language === 'bn' ? `সকল ${categoryObj.nameBn}` : 'All Items'}</span>
-                  </button>
-                );
-              })()}
+              <button
+                onClick={() => onSelectSubcategory('all')}
+                className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  currentSubcategory === 'all'
+                    ? 'bg-emerald-700 text-white shadow-xs scale-[1.02]'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/90 hover:border-slate-300'
+                }`}
+              >
+                <img
+                  src={categoryObj.image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&auto=format&fit=crop&q=80'}
+                  alt={categoryObj.nameBn}
+                  className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md object-cover shrink-0 ${
+                    currentSubcategory === 'all' ? 'ring-1 ring-white/60' : 'border border-slate-200'
+                  }`}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&auto=format&fit=crop&q=80';
+                  }}
+                />
+                <span>{language === 'bn' ? `সকল ${categoryObj.nameBn}` : 'All Items'}</span>
+              </button>
 
               {/* Subcategories list with small dynamic images */}
               {categoryObj.subcategories.map((sub) => {
@@ -262,40 +253,35 @@ export const CategorySlimBanner: React.FC<CategorySlimBannerProps> = ({
           {/* 11 Main Category Buttons */}
           {categories.map((cat) => {
             const isSelected = currentCategory.toLowerCase() === cat.id.toLowerCase() || currentCategory.toLowerCase() === cat.slug.toLowerCase();
-            return (() => {
-              const matchedProduct = products?.find(
-                (p) => p.category === cat.id && p.images && p.images.length > 0 && p.images[0]
-              );
-              const displayImg = matchedProduct?.images[0] || cat.image;
+            const displayImg = cat.image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&auto=format&fit=crop&q=80';
 
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    onSelectCategory(cat.id);
-                    onSelectSubcategory('all');
-                  }}
-                  className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    isSelected
-                      ? 'bg-emerald-700 text-white shadow-xs scale-[1.02]'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300'
+            return (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  onSelectCategory(cat.id);
+                  onSelectSubcategory('all');
+                }}
+                className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  isSelected
+                    ? 'bg-emerald-700 text-white shadow-xs scale-[1.02]'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300'
+                }`}
+              >
+                <img
+                  src={displayImg}
+                  alt={cat.nameBn}
+                  className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md object-cover shrink-0 ${
+                    isSelected ? 'ring-1 ring-white/60' : 'border border-slate-200'
                   }`}
-                >
-                  <img
-                    src={displayImg}
-                    alt={cat.nameBn}
-                    className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-md object-cover shrink-0 ${
-                      isSelected ? 'ring-1 ring-white/60' : 'border border-slate-200'
-                    }`}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&auto=format&fit=crop&q=80';
-                    }}
-                  />
-                  <span>{language === 'bn' ? cat.nameBn : cat.nameEn}</span>
-                </button>
-              );
-            })();
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&auto=format&fit=crop&q=80';
+                  }}
+                />
+                <span>{language === 'bn' ? cat.nameBn : cat.nameEn}</span>
+              </button>
+            );
           })}
         </div>
       )}

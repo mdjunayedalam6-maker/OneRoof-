@@ -228,10 +228,7 @@ export const ShopPage: React.FC = () => {
                             }`}
                           >
                             <img
-                              src={
-                                products.find((p) => p.category === c.id && p.images && p.images[0])?.images[0] ||
-                                c.image
-                              }
+                              src={c.image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&auto=format&fit=crop&q=80'}
                               alt={c.nameBn}
                               className="w-4 h-4 rounded object-cover shrink-0 border border-slate-200"
                             />
@@ -626,10 +623,7 @@ export const ShopPage: React.FC = () => {
                               }`}
                             >
                               <img
-                                src={
-                                  products.find((p) => p.category === c.id && p.images && p.images[0])?.images[0] ||
-                                  c.image
-                                }
+                                src={c.image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=100&auto=format&fit=crop&q=80'}
                                 alt={c.nameBn}
                                 className="w-4 h-4 rounded object-cover shrink-0 border border-slate-200"
                               />

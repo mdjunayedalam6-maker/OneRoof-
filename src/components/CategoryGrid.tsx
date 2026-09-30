@@ -68,10 +68,8 @@ export const CategoryGrid: React.FC = () => {
           const displayName = language === 'bn' ? cat.nameBn : cat.nameEn;
           const countText = language === 'bn' ? `${toBengaliNumber(cat.itemCount)}টি` : `${cat.itemCount} items`;
 
-          const matchingProduct = products.find(
-            (p) => p.category === cat.id && p.images && p.images.length > 0 && p.images[0]
-          );
-          const displayImage = matchingProduct?.images[0] || cat.image;
+          // Main Category Image: Always strictly display the uploaded category image, never auto-override with products
+          const displayImage = cat.image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&auto=format&fit=crop&q=80';
 
           return (
             <div

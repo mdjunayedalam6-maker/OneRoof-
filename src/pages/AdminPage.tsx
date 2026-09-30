@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShieldCheck, 
   Package, 
@@ -33,7 +33,8 @@ import {
   Copy,
   Check,
   Smartphone,
-  ExternalLink
+  ExternalLink,
+  CheckSquare
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Product, Category, Order, OrderStatus, AdminBannerSlide } from '../types';
@@ -48,6 +49,7 @@ export const AdminPage: React.FC = () => {
     addProduct,
     addMultipleProducts,
     deleteProduct,
+    deleteMultipleProducts,
     resetProductsToDefault,
     categories,
     addCategory,
@@ -218,6 +220,107 @@ export const AdminPage: React.FC = () => {
     updateSiteSettings({ freeShippingThreshold: num });
   };
 
+  // Multi-Select Products & Long-Press State for Bulk Deletion
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [holdingProductId, setHoldingProductId] = useState<string | null>(null);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const holdProgressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+
+  const HOLD_DURATION = 850; // ms for intuitive, reliable hold trigger
+
+  const startHoldTimer = (productId: string, e?: React.TouchEvent | React.MouseEvent) => {
+    if (isSelectionMode) return; // If already in selection mode, clicks toggle selection
+    
+    if (e && 'touches' in e && e.touches.length > 0) {
+      touchStartPosRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+    } else {
+      touchStartPosRef.current = null;
+    }
+
+    setHoldingProductId(productId);
+    setHoldProgress(0);
+
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    if (holdProgressIntervalRef.current) clearInterval(holdProgressIntervalRef.current);
+
+    const startTime = Date.now();
+    holdProgressIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(100, Math.round((elapsed / HOLD_DURATION) * 100));
+      setHoldProgress(progress);
+    }, 40);
+
+    holdTimerRef.current = setTimeout(() => {
+      if (holdProgressIntervalRef.current) {
+        clearInterval(holdProgressIntervalRef.current);
+        holdProgressIntervalRef.current = null;
+      }
+      setIsSelectionMode(true);
+      setSelectedProductIds([productId]);
+      setHoldingProductId(null);
+      setHoldProgress(0);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([70, 50, 70]);
+      }
+      addToast(
+        language === 'bn' 
+          ? 'সিলেক্ট অপশন সক্রিয় হয়েছে! যে প্রডাক্টগুলো ডিলিট করতে চান সিলেক্ট করুন।' 
+          : 'Selection mode activated! Select products to delete together.', 
+        'info'
+      );
+    }, HOLD_DURATION);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!holdingProductId || !touchStartPosRef.current) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
+    const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+    if (dx > 12 || dy > 12) {
+      cancelHoldTimer();
+    }
+  };
+
+  const cancelHoldTimer = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (holdProgressIntervalRef.current) {
+      clearInterval(holdProgressIntervalRef.current);
+      holdProgressIntervalRef.current = null;
+    }
+    setHoldingProductId(null);
+    setHoldProgress(0);
+    touchStartPosRef.current = null;
+  };
+
+  const toggleSelectProduct = (productId: string) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+  };
+
+  const handleSelectAllProducts = (productsToSelect: Product[]) => {
+    if (selectedProductIds.length === productsToSelect.length && productsToSelect.length > 0) {
+      setSelectedProductIds([]);
+    } else {
+      setSelectedProductIds(productsToSelect.map((p) => p.id));
+    }
+  };
+
+  const exitSelectionMode = () => {
+    cancelHoldTimer();
+    setIsSelectionMode(false);
+    setSelectedProductIds([]);
+  };
+
   const handleBannerImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: (url: string) => void,
@@ -258,7 +361,7 @@ export const AdminPage: React.FC = () => {
 
   // Universal Delete Confirmation Dialog State (100% Reliable in iframe sandbox)
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
-    type: 'product' | 'category' | 'order' | 'banner' | 'reset-products' | 'reset-categories' | 'reset-settings' | 'factory-reset';
+    type: 'product' | 'category' | 'order' | 'banner' | 'reset-products' | 'reset-categories' | 'reset-settings' | 'factory-reset' | 'bulk-products';
     id?: string;
     name: string;
     details?: string;
@@ -275,6 +378,14 @@ export const AdminPage: React.FC = () => {
             setProductToEdit(null);
             setIsProductModalOpen(false);
           }
+        }
+        break;
+
+      case 'bulk-products':
+        if (selectedProductIds.length > 0) {
+          deleteMultipleProducts(selectedProductIds);
+          setSelectedProductIds([]);
+          setIsSelectionMode(false);
         }
         break;
 
@@ -1103,6 +1214,27 @@ export const AdminPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => {
+                    if (isSelectionMode) {
+                      exitSelectionMode();
+                    } else {
+                      setIsSelectionMode(true);
+                      addToast('সিলেক্ট অপশন সক্রিয় হয়েছে! পছন্দের পণ্যগুলো সিলেক্ট করে একসাথে মুছুন', 'info');
+                    }
+                  }}
+                  className={`px-3.5 py-2 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md ${
+                    isSelectionMode
+                      ? 'bg-amber-500 text-slate-950 shadow-amber-500/20'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                  }`}
+                  title="একসাথে অনেকগুলো পণ্য সিলেক্ট করে ডিলিট করুন"
+                >
+                  <CheckSquare className="w-4 h-4 text-amber-400" />
+                  <span>{isSelectionMode ? 'সিলেক্ট বন্ধ' : 'একসাথে মুছুন (সিলেক্ট)'}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setActiveTab('shopbase')}
                   className="px-3.5 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-orange-600/20 transition-all active:scale-95 cursor-pointer"
                 >
@@ -1138,6 +1270,92 @@ export const AdminPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Selection Mode Action Bar or Helpful Hint */}
+            {!isSelectionMode ? (
+              <div className="bg-slate-900/60 border border-slate-800 px-4 py-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-400 font-bold shrink-0">💡 টিপস:</span>
+                  <span>যেকোনো প্রডাক্টের ওপর কিছুক্ষণ চাপ দিয়ে ধরে রাখলে (বা উপরের <strong>"একসাথে মুছুন (সিলেক্ট)"</strong> বাটনে চাপ দিলে) সিলেক্ট অপশন তৈরি হবে। এরপর যতগুলো মন চায় সিলেক্ট করে এক ক্লিকে একসাথে মুছে ফেলতে পারবেন।</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSelectionMode(true);
+                    addToast('সিলেক্ট অপশন চালু হয়েছে! পছন্দের পণ্যগুলোতে ক্লিক করুন', 'info');
+                  }}
+                  className="text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer text-xs shrink-0 self-start sm:self-auto"
+                >
+                  সিলেক্ট অপশন চালু করুন &rarr;
+                </button>
+              </div>
+            ) : (
+              <div className="bg-gradient-to-r from-rose-950/90 via-slate-900 to-slate-900 p-4 rounded-2xl border border-rose-500/50 flex flex-wrap items-center justify-between gap-3 shadow-2xl backdrop-blur-md sticky top-16 z-30 animate-in fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-lg shadow-rose-900/40">
+                    {selectedProductIds.length}
+                  </div>
+                  <div>
+                    <div className="font-bold text-white text-xs sm:text-sm flex items-center gap-2">
+                      <span>{selectedProductIds.length}টি পণ্য সিলেক্ট করা হয়েছে</span>
+                      {filteredProducts.length > 0 && (
+                        <span className="text-[11px] text-rose-300 font-mono">
+                          ({selectedProductIds.length}/{filteredProducts.length})
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-slate-300">
+                      পণ্যগুলোতে ক্লিক করে সিলেক্ট করুন, এরপর লাল বোতামে চাপ দিয়ে একসাথে মুছুন।
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAllProducts(filteredProducts)}
+                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckSquare className="w-3.5 h-3.5 text-amber-400" />
+                    <span>
+                      {selectedProductIds.length === filteredProducts.length && filteredProducts.length > 0
+                        ? 'সব আন-সিলেক্ট'
+                        : `সব সিলেক্ট করুন (${filteredProducts.length})`}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={selectedProductIds.length === 0}
+                    onClick={() => {
+                      if (selectedProductIds.length === 0) return;
+                      setDeleteConfirmation({
+                        type: 'bulk-products',
+                        name: `নির্বাচিত ${selectedProductIds.length}টি পণ্য একসাথে ডিলিট`,
+                        details: `নির্বাচিত ${selectedProductIds.length}টি পণ্য ক্যাটালগ এবং ডাটাবেজ থেকে মুছে ফেলা হবে।`,
+                      });
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg cursor-pointer ${
+                      selectedProductIds.length > 0
+                        ? 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-rose-900/50 active:scale-95'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
+                    }`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>একসাথে মুছুন ({selectedProductIds.length}টি)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={exitSelectionMode}
+                    className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl border border-slate-700 transition-colors cursor-pointer"
+                    title="সিলেক্ট মোড বন্ধ"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* ShopBase Connector Promo Strip in Products Tab */}
             <div className="bg-gradient-to-r from-orange-950/40 via-amber-950/30 to-slate-900 border border-orange-500/30 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -1163,12 +1381,193 @@ export const AdminPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Products Table */}
-            <div className="bg-slate-800/80 rounded-2xl border border-slate-700/80 overflow-hidden">
+            {/* Mobile Responsive Cards View (< md) */}
+            <div className="block md:hidden space-y-3">
+              {filteredProducts.map((p, idx) => {
+                const isSelected = selectedProductIds.includes(p.id);
+                const isHolding = holdingProductId === p.id;
+
+                return (
+                  <div
+                    key={`admin-mobile-prod-${p.id}-${idx}`}
+                    onMouseDown={(e) => startHoldTimer(p.id, e)}
+                    onMouseUp={cancelHoldTimer}
+                    onMouseLeave={cancelHoldTimer}
+                    onTouchStart={(e) => startHoldTimer(p.id, e)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={cancelHoldTimer}
+                    onTouchCancel={cancelHoldTimer}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      if (!isSelectionMode) {
+                        setIsSelectionMode(true);
+                        setSelectedProductIds([p.id]);
+                      }
+                    }}
+                    onClick={() => {
+                      if (isSelectionMode) {
+                        toggleSelectProduct(p.id);
+                      }
+                    }}
+                    className={`relative overflow-hidden rounded-2xl p-3.5 border transition-all select-none ${
+                      isSelectionMode ? 'cursor-pointer active:scale-[0.99]' : ''
+                    } ${
+                      isSelected
+                        ? 'bg-rose-950/40 border-rose-500 ring-2 ring-rose-500/50 shadow-lg shadow-rose-950/40'
+                        : isHolding
+                        ? 'bg-amber-950/50 border-amber-400 ring-2 ring-amber-400'
+                        : 'bg-slate-800/80 border-slate-700/80 hover:border-slate-600'
+                    }`}
+                  >
+                    {/* Hold Progress Bar Overlay */}
+                    {isHolding && (
+                      <div className="absolute inset-0 z-20 bg-slate-950/90 backdrop-blur-xs flex flex-col items-center justify-center p-3 animate-in fade-in duration-100">
+                        <div className="text-amber-400 font-black text-xs mb-1.5 flex items-center gap-1.5">
+                          <span className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                          <span>চেপে ধরে রাখুন... {holdProgress}%</span>
+                        </div>
+                        <div className="w-48 h-2.5 bg-slate-800 rounded-full overflow-hidden border border-amber-500/40 shadow-inner">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 to-rose-500 transition-all duration-75 rounded-full"
+                            style={{ width: `${holdProgress}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-300 mt-1.5">সিলেক্ট অপশন চালু হচ্ছে...</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-start gap-3">
+                      {/* Checkbox */}
+                      {isSelectionMode ? (
+                        <div
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-1 transition-all ${
+                            isSelected
+                              ? 'bg-rose-600 text-white shadow-md shadow-rose-900/50 scale-105'
+                              : 'border-2 border-slate-500 bg-slate-900/80 hover:border-slate-300'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-4 h-4 stroke-[3]" />}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsSelectionMode(true);
+                            setSelectedProductIds([p.id]);
+                            addToast('সিলেক্ট অপশন সক্রিয় হয়েছে!', 'info');
+                          }}
+                          className="w-5 h-5 rounded-md border border-slate-600 hover:border-amber-400 bg-slate-900/50 flex items-center justify-center shrink-0 mt-1.5 cursor-pointer text-slate-500 hover:text-amber-400"
+                          title="সিলেক্ট মোড চালু করুন"
+                        >
+                          <CheckSquare className="w-3 h-3" />
+                        </button>
+                      )}
+
+                      {/* Product Image */}
+                      <img
+                        src={
+                          p.images[0]?.includes('_L_') && p.images[0].endsWith('.jpg')
+                            ? p.images[0].replace(/\.jpg$/i, '.jpeg')
+                            : p.images[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=300'
+                        }
+                        alt={p.titleBn}
+                        referrerPolicy="no-referrer"
+                        className="w-16 h-16 object-cover rounded-xl border border-slate-700 shrink-0"
+                      />
+
+                      {/* Details */}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-white text-xs line-clamp-1">{p.titleBn}</h4>
+                        <p className="text-[11px] text-slate-400 line-clamp-1">{p.titleEn}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="font-bold text-emerald-400 text-xs">{formatPrice(p.price)}</span>
+                          {p.originalPrice && (
+                            <span className="text-[10px] text-slate-500 line-through">
+                              {formatPrice(p.originalPrice)}
+                            </span>
+                          )}
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                            p.stock > 5 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                          }`}>
+                            {p.stock} টি মজুদ
+                          </span>
+                          <span className="text-[9px] text-slate-400 capitalize bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">
+                            {p.category}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons on Mobile (when not in select mode) */}
+                    {!isSelectionMode && (
+                      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-700/60">
+                        <span className="text-[10px] text-slate-500">
+                          💡 চাপ দিয়ে ধরে রাখলে সিলেক্ট হবে
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProductToEdit(p);
+                              setIsProductModalOpen(true);
+                            }}
+                            className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-bold text-[11px]"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>এডিট</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmation({
+                                type: 'product',
+                                id: p.id,
+                                name: p.titleBn,
+                                details: `আইডি: ${p.id} • ক্যাটাগরি: ${p.category} • স্টক: ${p.stock} টি • মূল্য: ${formatPrice(p.price)}`,
+                              });
+                            }}
+                            className="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-bold text-[11px] border border-rose-500/30"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>মুছুন</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Products Table (md and above) */}
+            <div className="hidden md:block bg-slate-800/80 rounded-2xl border border-slate-700/80 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-300">
                   <thead className="bg-slate-900/80 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-700/80">
                     <tr>
+                      <th className="py-3 px-3 w-10 text-center">
+                        {isSelectionMode ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectAllProducts(filteredProducts)}
+                            className="cursor-pointer"
+                            title="সব সিলেক্ট / আন-সিলেক্ট"
+                          >
+                            {selectedProductIds.length === filteredProducts.length && filteredProducts.length > 0 ? (
+                              <div className="w-4 h-4 rounded bg-rose-600 text-white flex items-center justify-center">
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              </div>
+                            ) : (
+                              <div className="w-4 h-4 rounded border border-slate-500 hover:border-slate-300" />
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-[9px] text-slate-500">সিলেক্ট</span>
+                        )}
+                      </th>
                       <th className="py-3 px-4">ছবি ও নাম</th>
                       <th className="py-3 px-3">ক্যাটাগরি</th>
                       <th className="py-3 px-3">বিক্রয় মূল্য</th>
@@ -1178,114 +1577,231 @@ export const AdminPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/60">
-                    {filteredProducts.map((p, idx) => (
-                      <tr key={`admin-prod-${p.id}-${idx}`} className="hover:bg-slate-700/30 transition-colors">
-                        <td className="py-3 px-4 flex items-center gap-3">
-                          <img
-                            src={
-                              p.images[0]?.includes('_L_') && p.images[0].endsWith('.jpg')
-                                ? p.images[0].replace(/\.jpg$/i, '.jpeg')
-                                : p.images[0] || ''
+                    {filteredProducts.map((p, idx) => {
+                      const isSelected = selectedProductIds.includes(p.id);
+                      const isHolding = holdingProductId === p.id;
+
+                      return (
+                        <tr
+                          key={`admin-prod-${p.id}-${idx}`}
+                          onMouseDown={(e) => startHoldTimer(p.id, e)}
+                          onMouseUp={cancelHoldTimer}
+                          onMouseLeave={cancelHoldTimer}
+                          onTouchStart={(e) => startHoldTimer(p.id, e)}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={cancelHoldTimer}
+                          onTouchCancel={cancelHoldTimer}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            if (!isSelectionMode) {
+                              setIsSelectionMode(true);
+                              setSelectedProductIds([p.id]);
                             }
-                            alt={p.titleBn}
-                            referrerPolicy="no-referrer"
-                            onError={(e) => {
-                              const target = e.currentTarget;
-                              if (target.src.includes('_L_')) {
-                                target.src = target.src.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+                          }}
+                          onClick={() => {
+                            if (isSelectionMode) {
+                              toggleSelectProduct(p.id);
+                            }
+                          }}
+                          className={`transition-colors relative select-none ${
+                            isSelectionMode ? 'cursor-pointer' : ''
+                          } ${
+                            isSelected 
+                              ? 'bg-rose-950/40 hover:bg-rose-950/50 border-l-4 border-rose-500' 
+                              : isHolding
+                              ? 'bg-amber-950/40 ring-2 ring-amber-400 animate-pulse'
+                              : 'hover:bg-slate-700/30'
+                          }`}
+                        >
+                          <td 
+                            className="py-3 px-3 text-center"
+                            onClick={(e) => {
+                              if (!isSelectionMode) {
+                                e.stopPropagation();
+                                setIsSelectionMode(true);
+                                setSelectedProductIds([p.id]);
                               } else {
-                                target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
+                                e.stopPropagation();
+                                toggleSelectProduct(p.id);
                               }
                             }}
-                            className="w-12 h-12 object-cover rounded-xl border border-slate-700 shrink-0"
-                          />
-                          <div className="min-w-0">
-                            <div className="font-bold text-white text-sm line-clamp-1">{p.titleBn}</div>
-                            <div className="text-[11px] text-slate-400 line-clamp-1">{p.titleEn}</div>
-                            <div className="text-[10px] text-amber-400 font-medium">ব্র্যান্ড: {p.brand}</div>
-                            {p.sourceUrl && (
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <a
-                                  href={p.sourceUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-[10px] text-orange-400 hover:text-orange-300 font-bold bg-orange-950/50 border border-orange-800/60 px-1.5 py-0.2 rounded"
-                                >
-                                  <span>ShopBaseBD (পাইকারি: ৳ {p.wholesalePrice})</span>
-                                  <ExternalLink className="w-2.5 h-2.5" />
-                                </a>
-                                {p.profitMarginPercent && (
-                                  <span className="text-[10px] text-yellow-300 font-semibold">
-                                    +{p.profitMarginPercent}% লাভ
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 font-medium capitalize text-slate-300">{p.category}</td>
-                        <td className="py-3 px-3">
-                          <span className="font-bold text-emerald-400">{formatPrice(p.price)}</span>
-                          {p.originalPrice && (
-                            <span className="text-[11px] text-slate-500 line-through block">
-                              {formatPrice(p.originalPrice)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                            p.stock > 5 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
-                          }`}>
-                            {p.stock} টি মজুদ
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          {p.isFlashSale ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-orange-500 text-slate-950">
-                              ফ্ল্যাশ সেল
-                            </span>
-                          ) : (
-                            <span className="text-slate-500 text-[11px]">-</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setProductToEdit(p);
-                                setIsProductModalOpen(true);
-                              }}
-                              className="px-2.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-bold text-xs"
-                              title="এডিট"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                              <span>এডিট</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setDeleteConfirmation({
-                                  type: 'product',
-                                  id: p.id,
-                                  name: p.titleBn,
-                                  details: `আইডি: ${p.id} • ক্যাটাগরি: ${p.category} • স্টক: ${p.stock} টি • মূল্য: ${formatPrice(p.price)}`,
-                                })
+                          >
+                            <div className={`w-5 h-5 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                              isSelected 
+                                ? 'bg-rose-600 text-white shadow-xs' 
+                                : isSelectionMode
+                                ? 'border-2 border-slate-600 hover:border-slate-400 bg-slate-900/50'
+                                : 'border border-slate-700 hover:border-amber-400 bg-slate-900/40 hover:bg-slate-800'
+                            }`}>
+                              {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 flex items-center gap-3">
+                            <img
+                              src={
+                                p.images[0]?.includes('_L_') && p.images[0].endsWith('.jpg')
+                                  ? p.images[0].replace(/\.jpg$/i, '.jpeg')
+                                  : p.images[0] || ''
                               }
-                              className="px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-bold text-xs border border-rose-500/30"
-                              title="প্রডাক্ট মুছুন"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>মুছুন</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                              alt={p.titleBn}
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                if (target.src.includes('_L_')) {
+                                  target.src = target.src.replace('_L_', '_S_').replace(/\.jpeg$/i, '.jpg');
+                                } else {
+                                  target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
+                                }
+                              }}
+                              className="w-12 h-12 object-cover rounded-xl border border-slate-700 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="font-bold text-white text-sm line-clamp-1">{p.titleBn}</div>
+                              <div className="text-[11px] text-slate-400 line-clamp-1">{p.titleEn}</div>
+                              <div className="text-[10px] text-amber-400 font-medium">ব্র্যান্ড: {p.brand}</div>
+                              {p.sourceUrl && (
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <a
+                                    href={p.sourceUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-1 text-[10px] text-orange-400 hover:text-orange-300 font-bold bg-orange-950/50 border border-orange-800/60 px-1.5 py-0.2 rounded"
+                                  >
+                                    <span>ShopBaseBD (পাইকারি: ৳ {p.wholesalePrice})</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                  {p.profitMarginPercent && (
+                                    <span className="text-[10px] text-yellow-300 font-semibold">
+                                      +{p.profitMarginPercent}% লাভ
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 font-medium capitalize text-slate-300">{p.category}</td>
+                          <td className="py-3 px-3">
+                            <span className="font-bold text-emerald-400">{formatPrice(p.price)}</span>
+                            {p.originalPrice && (
+                              <span className="text-[11px] text-slate-500 line-through block">
+                                {formatPrice(p.originalPrice)}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              p.stock > 5 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                            }`}>
+                              {p.stock} টি মজুদ
+                            </span>
+                          </td>
+                          <td className="py-3 px-3">
+                            {p.isFlashSale ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-orange-500 text-slate-950">
+                                ফ্ল্যাশ সেল
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 text-[11px]">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProductToEdit(p);
+                                  setIsProductModalOpen(true);
+                                }}
+                                className="px-2.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-bold text-xs"
+                                title="এডিট"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>এডিট</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteConfirmation({
+                                    type: 'product',
+                                    id: p.id,
+                                    name: p.titleBn,
+                                    details: `আইডি: ${p.id} • ক্যাটাগরি: ${p.category} • স্টক: ${p.stock} টি • মূল্য: ${formatPrice(p.price)}`,
+                                  });
+                                }}
+                                className="px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1 font-bold text-xs border border-rose-500/30"
+                                title="প্রডাক্ট মুছুন"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>মুছুন</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            {/* Floating Bulk Action Bar (Always accessible when items selected) */}
+            {isSelectionMode && selectedProductIds.length > 0 && (
+              <div className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-slate-900/95 backdrop-blur-md border-2 border-rose-500/80 p-3 sm:px-4 rounded-2xl shadow-2xl shadow-rose-950/80 flex items-center justify-between gap-2.5 animate-in slide-in-from-bottom duration-200">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-md shadow-rose-900/40">
+                    {selectedProductIds.length}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-white text-xs truncate">
+                      {selectedProductIds.length} টি পণ্য সিলেক্টেড
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate">
+                      একসাথে মুছে ফেলতে লাল বাটনে চাপুন
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAllProducts(filteredProducts)}
+                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold rounded-xl border border-slate-700 transition-colors cursor-pointer"
+                  >
+                    {selectedProductIds.length === filteredProducts.length && filteredProducts.length > 0
+                      ? 'আন-সিলেক্ট'
+                      : 'সব সিলেক্ট'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedProductIds.length === 0) return;
+                      setDeleteConfirmation({
+                        type: 'bulk-products',
+                        name: `নির্বাচিত ${selectedProductIds.length}টি পণ্য একসাথে ডিলিট`,
+                        details: `নির্বাচিত ${selectedProductIds.length}টি পণ্য ক্যাটালগ ও ডাটাবেজ থেকে মুছে ফেলা হবে।`,
+                      });
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 shadow-lg bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/50 cursor-pointer active:scale-95"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>একসাথে মুছুন ({selectedProductIds.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={exitSelectionMode}
+                    className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl border border-slate-700 cursor-pointer"
+                    title="সিলেকশন বন্ধ করুন"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1404,6 +1920,14 @@ export const AdminPage: React.FC = () => {
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>রিস্টোর</span>
                 </button>
+              </div>
+
+              {/* Informative notice confirming main category image is static and inner categories are dynamic */}
+              <div className="text-[11px] text-emerald-300 bg-emerald-950/50 border border-emerald-700/60 p-3 rounded-2xl flex items-start gap-2 leading-relaxed">
+                <span className="text-base shrink-0">🔒</span>
+                <div>
+                  <strong className="text-white">প্রধান ক্যাটাগরির ছবি নিয়ন্ত্রণ:</strong> আপনি প্রধান ক্যাটাগরির জন্য যে ছবি আপলোড করবেন তা সবসময় অপরিবর্তিত থাকবে (প্রোডাক্ট আপলোড করলেও অটো পরিবর্তন হবে না)। তবে প্রধান ক্যাটাগরির ভেতরের সাব-ক্যাটাগরিসমূহের ছবি প্রোডাক্টের ছবি অনুযায়ী স্বয়ংক্রিয়ভাবে আপডেট হবে।
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3182,6 +3706,7 @@ export const AdminPage: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <h3 className="text-base font-bold text-white">
                   {deleteConfirmation.type === 'product' && 'প্রডাক্ট মুছে ফেলতে চান?'}
+                  {deleteConfirmation.type === 'bulk-products' && 'নির্বাচিত পণ্যগুলো একসাথে মুছে ফেলতে চান?'}
                   {deleteConfirmation.type === 'category' && 'ক্যাটাগরি মুছে ফেলতে চান?'}
                   {deleteConfirmation.type === 'order' && 'কাস্টমার অর্ডার মুছে ফেলতে চান?'}
                   {deleteConfirmation.type === 'banner' && 'ব্যানার মুছে ফেলতে চান?'}
@@ -3202,16 +3727,61 @@ export const AdminPage: React.FC = () => {
             </div>
 
             {/* Target Item Preview Card */}
-            <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-1">
-              <div className="text-sm font-bold text-rose-300 truncate">
-                {deleteConfirmation.name}
-              </div>
-              {deleteConfirmation.details && (
-                <div className="text-xs text-slate-400">
-                  {deleteConfirmation.details}
+            {deleteConfirmation.type === 'bulk-products' ? (
+              <div className="space-y-2">
+                <div className="bg-rose-950/40 p-3 rounded-2xl border border-rose-500/40">
+                  <div className="text-xs font-bold text-rose-300">
+                    {deleteConfirmation.name}
+                  </div>
+                  {deleteConfirmation.details && (
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      {deleteConfirmation.details}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+                <div className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+                  <span>মুছে ফেলা হবে এমন পণ্যসমূহ:</span>
+                  <span className="text-rose-400 font-mono text-[10px]">{selectedProductIds.length} টি</span>
+                </div>
+                <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-800/80 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                  {selectedProductIds.map((id) => {
+                    const prod = products.find((p) => p.id === id);
+                    if (!prod) return null;
+                    return (
+                      <div key={`confirm-del-${id}`} className="flex items-center gap-2.5 pt-1.5 first:pt-0">
+                        <img
+                          src={
+                            prod.images[0]?.includes('_L_') && prod.images[0].endsWith('.jpg')
+                              ? prod.images[0].replace(/\.jpg$/i, '.jpeg')
+                              : prod.images[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=200'
+                          }
+                          alt={prod.titleBn}
+                          className="w-9 h-9 object-cover rounded-lg border border-slate-700 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-white truncate">{prod.titleBn}</div>
+                          <div className="text-[10px] text-slate-400">{formatPrice(prod.price)} • {prod.category}</div>
+                        </div>
+                        <span className="text-[10px] text-rose-400 font-bold bg-rose-950/50 border border-rose-800/60 px-1.5 py-0.5 rounded shrink-0">
+                          মুছে যাবে
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-1">
+                <div className="text-sm font-bold text-rose-300 truncate">
+                  {deleteConfirmation.name}
+                </div>
+                {deleteConfirmation.details && (
+                  <div className="text-xs text-slate-400">
+                    {deleteConfirmation.details}
+                  </div>
+                )}
+              </div>
+            )}
 
             <p className="text-[11px] text-amber-400/90 flex items-center gap-1.5 font-medium">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
